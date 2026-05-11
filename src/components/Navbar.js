@@ -77,7 +77,7 @@ export default function Navbar() {
           <Link href="#accounts" className="text-sm text-gray-600 font-medium hover:text-blue-600" onClick={() => setMenuOpen(false)}>Accounts</Link>
           <Link href="#pricing" className="text-sm text-gray-600 font-medium hover:text-blue-600" onClick={() => setMenuOpen(false)}>Pricing</Link>
           <Link href="#security" className="text-sm text-gray-600 font-medium hover:text-blue-600" onClick={() => setMenuOpen(false)}>Security</Link>
-          <Link href="#about" className="text-sm text-gray-600 font-medium hover:text-blue-600" onClick={() => setMenuOpen(false)}>About</Link>
+          <Link href="/about" className="text-sm text-gray-600 font-medium hover:text-blue-600" onClick={() => setMenuOpen(false)}>About</Link>
           <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
             <Link href="/login" className="text-sm font-medium text-center text-gray-600 border border-gray-200 py-2 rounded-lg hover:border-blue-300">Log in</Link>
             <Link href="/signup" className="text-sm font-medium text-center text-white bg-blue-600 py-2 rounded-lg hover:bg-blue-700">Get Started</Link>

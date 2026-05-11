@@ -10,7 +10,7 @@ export default function Footer() {
       { label: "Mobile App", href: "#" },
     ],
     Company: [
-      { label: "About Us", href: "#" },
+      { label: "About Us", href: "/about" },
       { label: "Careers", href: "#" },
       { label: "Blog", href: "#" },
       { label: "Press", href: "#" },
