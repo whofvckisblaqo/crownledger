@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
@@ -31,7 +31,6 @@ export default function VerifyEmailPage() {
     setOtp(newOtp);
     setError("");
 
-    // Auto focus next
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
@@ -128,10 +127,16 @@ export default function VerifyEmailPage() {
             </svg>
           </div>
           <div className="flex flex-col leading-tight">
-            <span className="text-[18px] font-bold text-gray-900 tracking-tight" style={{ fontFamily: "'Outfit', sans-serif" }}>
+            <span
+              className="text-[18px] font-bold text-gray-900 tracking-tight"
+              style={{ fontFamily: "'Outfit', sans-serif" }}
+            >
               Crownledger
             </span>
-            <span className="text-[9px] font-medium text-gray-400 tracking-[2px] uppercase" style={{ fontFamily: "'Outfit', sans-serif" }}>
+            <span
+              className="text-[9px] font-medium text-gray-400 tracking-[2px] uppercase"
+              style={{ fontFamily: "'Outfit', sans-serif" }}
+            >
               Private Banking
             </span>
           </div>
@@ -150,7 +155,10 @@ export default function VerifyEmailPage() {
 
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>
+            <h1
+              className="text-2xl font-bold text-gray-900 mb-2"
+              style={{ fontFamily: "'Outfit', sans-serif" }}
+            >
               Check your email
             </h1>
             <p className="text-sm text-gray-500 leading-relaxed">
@@ -186,7 +194,10 @@ export default function VerifyEmailPage() {
 
           {/* OTP inputs */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-            <div className="flex items-center justify-center gap-3" onPaste={handlePaste}>
+            <div
+              className="flex items-center justify-center gap-3"
+              onPaste={handlePaste}
+            >
               {otp.map((digit, index) => (
                 <input
                   key={index}
@@ -197,7 +208,7 @@ export default function VerifyEmailPage() {
                   value={digit}
                   onChange={(e) => handleChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
-                  className={`w-12 h-14 text-center text-xl font-bold rounded-xl border-2 
+                  className={`w-12 h-14 text-center text-xl font-bold rounded-xl border-2
                     text-gray-900 focus:outline-none transition-all duration-200
                     ${digit
                       ? "border-blue-500 bg-blue-50"
@@ -250,13 +261,33 @@ export default function VerifyEmailPage() {
 
           {/* Back to signup */}
           <div className="text-center mt-4">
-            <Link href="/signup" className="text-sm text-gray-400 hover:text-gray-600 transition">
-              ← Back to sign up
+            <Link
+              href="/signup"
+              className="text-sm text-gray-400 hover:text-gray-600 transition flex items-center justify-center gap-1"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+              Back to sign up
             </Link>
           </div>
 
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

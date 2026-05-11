@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
@@ -139,8 +139,9 @@ export default function ResetPasswordPage() {
           <div className="flex items-center gap-3 mb-8">
             {[1, 2].map((s) => (
               <div key={s} className="flex items-center gap-2 flex-1">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all
-                  ${step >= s ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-400"}`}
+                <div
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all
+                    ${step >= s ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-400"}`}
                   style={{ fontFamily: "'Outfit', sans-serif" }}
                 >
                   {step > s ? (
@@ -351,5 +352,17 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
