@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 
@@ -8,6 +8,41 @@ export default function AdminPage() {
   const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [txSearch, setTxSearch] = useState("");
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    setUsersLoading(true);
+    try {
+      const res = await fetch("/api/admin/users");
+      const data = await res.json();
+      setUsers(data.users || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const toggleUserStatus = async (userId, currentStatus) => {
+    const newStatus = currentStatus === "active" ? "suspended" : "active";
+    try {
+      await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, status: newStatus }),
+      });
+      fetchUsers();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const navItems = [
     {
@@ -56,20 +91,10 @@ export default function AdminPage() {
   ];
 
   const stats = [
-    { label: "Total Users", value: "50,234", change: "+124 this week", up: true },
-    { label: "Total Deposits", value: "$2.4B", change: "+$12M this week", up: true },
-    { label: "Total Transactions", value: "1.2M", change: "+8,432 today", up: true },
-    { label: "Suspended Accounts", value: "12", change: "-2 this week", up: false },
-  ];
-
-  const users = [
-    { name: "James Whitfield", email: "james@example.com", status: "active", joined: "Jan 15, 2024", balance: "$84,250", role: "user" },
-    { name: "Sarah Mitchell", email: "sarah@example.com", status: "active", joined: "Feb 3, 2024", balance: "$12,430", role: "user" },
-    { name: "David Okafor", email: "david@example.com", status: "suspended", joined: "Mar 12, 2024", balance: "$3,200", role: "user" },
-    { name: "Rachel Thompson", email: "rachel@example.com", status: "active", joined: "Apr 1, 2024", balance: "$56,000", role: "user" },
-    { name: "Michael Chen", email: "michael@example.com", status: "active", joined: "Apr 20, 2024", balance: "$128,000", role: "user" },
-    { name: "Olivia Harris", email: "olivia@example.com", status: "active", joined: "May 1, 2024", balance: "$2,100", role: "user" },
-    { name: "Admin User", email: "admin@crownledger.com", status: "active", joined: "Jan 1, 2024", balance: "$0", role: "admin" },
+    { label: "Total Users", value: users.length.toString(), change: "All time", up: true },
+    { label: "Verified Users", value: users.filter(u => u.isVerified).length.toString(), change: "Email verified", up: true },
+    { label: "Active Users", value: users.filter(u => u.status === "active").length.toString(), change: "Currently active", up: true },
+    { label: "Suspended Accounts", value: users.filter(u => u.status === "suspended").length.toString(), change: "Needs review", up: false },
   ];
 
   const transactions = [
@@ -90,18 +115,7 @@ export default function AdminPage() {
     { owner: "Michael Chen", type: "Checking", number: "****8834", balance: "$128,000", status: "active" },
   ];
 
-  const [userList, setUserList] = useState(users);
   const [accountList, setAccountList] = useState(accounts);
-  const [search, setSearch] = useState("");
-  const [txSearch, setTxSearch] = useState("");
-
-  const toggleUserStatus = (email) => {
-    setUserList(userList.map((u) =>
-      u.email === email
-        ? { ...u, status: u.status === "active" ? "suspended" : "active" }
-        : u
-    ));
-  };
 
   const toggleAccountStatus = (number) => {
     setAccountList(accountList.map((a) =>
@@ -110,12 +124,6 @@ export default function AdminPage() {
         : a
     ));
   };
-
-  const filteredUsers = userList.filter(
-    (u) =>
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase())
-  );
 
   const filteredTx = transactions.filter(
     (t) =>
@@ -275,13 +283,21 @@ export default function AdminPage() {
                     </button>
                   </div>
                   <div className="divide-y divide-gray-50">
-                    {users.slice(0, 4).map((u, i) => (
+                    {usersLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    ) : users.slice(0, 5).map((u, i) => (
                       <div key={i} className="flex items-center gap-3 px-5 py-3.5">
                         <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
-                          <span className="text-white text-xs font-bold">{u.name.split(" ").map(n => n[0]).join("")}</span>
+                          <span className="text-white text-xs font-bold">
+                            {u.firstName?.[0]}{u.lastName?.[0]}
+                          </span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{u.name}</p>
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {u.firstName} {u.lastName}
+                          </p>
                           <p className="text-xs text-gray-400 truncate">{u.email}</p>
                         </div>
                         <span className={`text-xs font-semibold px-2 py-1 rounded-lg flex-shrink-0
@@ -290,6 +306,11 @@ export default function AdminPage() {
                         </span>
                       </div>
                     ))}
+                    {!usersLoading && users.length === 0 && (
+                      <div className="text-center py-8">
+                        <p className="text-sm text-gray-400">No users yet</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -304,7 +325,7 @@ export default function AdminPage() {
                     </button>
                   </div>
                   <div className="divide-y divide-gray-50">
-                    {transactions.slice(0, 4).map((tx, i) => (
+                    {transactions.slice(0, 5).map((tx, i) => (
                       <div key={i} className="flex items-center gap-3 px-5 py-3.5">
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-bold
                           ${tx.status === "completed" ? "bg-green-50 text-green-600" : tx.status === "pending" ? "bg-yellow-50 text-yellow-600" : "bg-red-50 text-red-500"}`}>
@@ -339,70 +360,119 @@ export default function AdminPage() {
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition bg-white"
                   />
                 </div>
+                <button
+                  onClick={fetchUsers}
+                  className="flex items-center gap-2 bg-white border border-gray-200 hover:border-blue-300 text-gray-600 hover:text-blue-600 text-sm font-medium px-4 py-2.5 rounded-xl transition"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 4 23 10 17 10" />
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                  </svg>
+                  Refresh
+                </button>
               </div>
 
               <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-50">
-                        {["User", "Email", "Balance", "Role", "Joined", "Status", "Actions"].map((h) => (
-                          <th key={h} className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {filteredUsers.map((u, i) => (
-                        <tr key={i} className="hover:bg-gray-50 transition">
-                          <td className="px-5 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
-                                <span className="text-white text-xs font-bold">{u.name.split(" ").map(n => n[0]).join("")}</span>
-                              </div>
-                              <p className="text-sm font-medium text-gray-900 whitespace-nowrap">{u.name}</p>
-                            </div>
-                          </td>
-                          <td className="px-5 py-4">
-                            <p className="text-sm text-gray-500 whitespace-nowrap">{u.email}</p>
-                          </td>
-                          <td className="px-5 py-4">
-                            <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">{u.balance}</p>
-                          </td>
-                          <td className="px-5 py-4">
-                            <span className={`text-xs font-semibold px-2 py-1 rounded-lg
-                              ${u.role === "admin" ? "bg-blue-50 text-blue-600" : "bg-gray-50 text-gray-600"}`}>
-                              {u.role}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4">
-                            <p className="text-sm text-gray-500 whitespace-nowrap">{u.joined}</p>
-                          </td>
-                          <td className="px-5 py-4">
-                            <span className={`text-xs font-semibold px-2 py-1 rounded-lg
-                              ${u.status === "active" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"}`}>
-                              {u.status}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4">
-                            <button
-                              onClick={() => toggleUserStatus(u.email)}
-                              disabled={u.role === "admin"}
-                              className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap
-                                ${u.status === "active"
-                                  ? "bg-red-50 text-red-500 hover:bg-red-100"
-                                  : "bg-green-50 text-green-600 hover:bg-green-100"
-                                }`}
-                            >
-                              {u.status === "active" ? "Suspend" : "Activate"}
-                            </button>
-                          </td>
+                {usersLoading ? (
+                  <div className="flex items-center justify-center py-16">
+                    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-50">
+                          {["User", "Email", "Phone", "Role", "Verified", "Joined", "Status", "Actions"].map((h) => (
+                            <th key={h} className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">
+                              {h}
+                            </th>
+                          ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {users
+                          .filter((u) =>
+                            `${u.firstName} ${u.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
+                            u.email?.toLowerCase().includes(search.toLowerCase())
+                          )
+                          .map((u, i) => (
+                            <tr key={i} className="hover:bg-gray-50 transition">
+                              <td className="px-5 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                                    <span className="text-white text-xs font-bold">
+                                      {u.firstName?.[0]}{u.lastName?.[0]}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm font-medium text-gray-900 whitespace-nowrap">
+                                    {u.firstName} {u.lastName}
+                                  </p>
+                                </div>
+                              </td>
+                              <td className="px-5 py-4">
+                                <p className="text-sm text-gray-500 whitespace-nowrap">{u.email}</p>
+                              </td>
+                              <td className="px-5 py-4">
+                                <p className="text-sm text-gray-500 whitespace-nowrap">{u.phone || "—"}</p>
+                              </td>
+                              <td className="px-5 py-4">
+                                <span className={`text-xs font-semibold px-2 py-1 rounded-lg
+                                  ${u.role === "admin" ? "bg-blue-50 text-blue-600" : "bg-gray-50 text-gray-600"}`}>
+                                  {u.role}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4">
+                                <span className={`text-xs font-semibold px-2 py-1 rounded-lg
+                                  ${u.isVerified ? "bg-green-50 text-green-600" : "bg-yellow-50 text-yellow-600"}`}>
+                                  {u.isVerified ? "Verified" : "Pending"}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4">
+                                <p className="text-sm text-gray-500 whitespace-nowrap">
+                                  {new Date(u.createdAt).toLocaleDateString("en-US", {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  })}
+                                </p>
+                              </td>
+                              <td className="px-5 py-4">
+                                <span className={`text-xs font-semibold px-2 py-1 rounded-lg
+                                  ${u.status === "active" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"}`}>
+                                  {u.status}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4">
+                                <button
+                                  onClick={() => toggleUserStatus(u._id, u.status)}
+                                  disabled={u.role === "admin"}
+                                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap
+                                    ${u.status === "active"
+                                      ? "bg-red-50 text-red-500 hover:bg-red-100"
+                                      : "bg-green-50 text-green-600 hover:bg-green-100"
+                                    }`}
+                                >
+                                  {u.status === "active" ? "Suspend" : "Activate"}
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+
+                    {users.length === 0 && (
+                      <div className="text-center py-16">
+                        <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                          </svg>
+                        </div>
+                        <p className="text-sm text-gray-400 font-medium">No users found</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
