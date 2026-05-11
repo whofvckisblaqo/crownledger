@@ -30,12 +30,17 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.firstName = user.firstName;
         token.lastName = user.lastName;
         token.role = user.role;
+      }
+      // Handle session update trigger from update()
+      if (trigger === "update" && session) {
+        if (session.firstName) token.firstName = session.firstName;
+        if (session.lastName) token.lastName = session.lastName;
       }
       return token;
     },

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 
 export default function SettingsPage() {
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const [activeTab, setActiveTab] = useState("profile");
   const [loading, setLoading] = useState(true);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -87,27 +87,33 @@ export default function SettingsPage() {
   };
 
   const handleProfileSave = async () => {
-    if (!profile.firstName || !profile.lastName) {
-      showError("First and last name are required.");
-      return;
-    }
-    setSaveLoading(true);
-    try {
-      const res = await fetch("/api/user/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "profile", ...profile }),
-      });
-      const data = await res.json();
-      if (!res.ok) { showError(data.message); return; }
-      showSuccess("Profile updated successfully!");
-    } catch (err) {
-      showError("Something went wrong.");
-    } finally {
-      setSaveLoading(false);
-    }
-  };
+  if (!profile.firstName || !profile.lastName) {
+    showError("First and last name are required.");
+    return;
+  }
+  setSaveLoading(true);
+  try {
+    const res = await fetch("/api/user/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "profile", ...profile }),
+    });
+    const data = await res.json();
+    if (!res.ok) { showError(data.message); return; }
 
+    // Force session to refresh with new name
+    await update({
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+    });
+
+    showSuccess("Profile updated successfully!");
+  } catch (err) {
+    showError("Something went wrong.");
+  } finally {
+    setSaveLoading(false);
+  }
+};
   const handlePasswordSave = async () => {
     if (!passwords.current || !passwords.new || !passwords.confirm) {
       showError("Please fill in all password fields.");
