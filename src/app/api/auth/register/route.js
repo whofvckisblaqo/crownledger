@@ -2,15 +2,19 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
+import Account from "@/models/Account";
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+function generateAccountNumber() {
+  return Math.floor(1000000000 + Math.random() * 9000000000).toString();
+}
+
 export async function POST(req) {
   try {
     console.log("📩 Register route hit");
-
     await connectDB();
     console.log("✅ MongoDB connected");
 
@@ -36,7 +40,7 @@ export async function POST(req) {
     const otp = generateOTP();
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
-    await User.create({
+    const user = await User.create({
       firstName,
       lastName,
       email,
@@ -46,6 +50,28 @@ export async function POST(req) {
       otpExpiry,
       isVerified: false,
     });
+
+    // Auto create checking and savings accounts
+    await Account.create([
+      {
+        userId: user._id,
+        accountNumber: generateAccountNumber(),
+        type: "checking",
+        balance: 0,
+        currency: "USD",
+        status: "active",
+      },
+      {
+        userId: user._id,
+        accountNumber: generateAccountNumber(),
+        type: "savings",
+        balance: 0,
+        currency: "USD",
+        status: "active",
+      },
+    ]);
+
+    console.log("✅ User and accounts created:", user._id);
 
     const { Resend } = await import("resend");
     const resend = new Resend(process.env.RESEND_API_KEY);

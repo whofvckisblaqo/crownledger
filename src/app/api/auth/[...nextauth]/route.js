@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 
-const handler = NextAuth({
+const authOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -22,7 +22,6 @@ const handler = NextAuth({
         if (!isValid) throw new Error("Incorrect password");
 
         if (!user.isVerified) throw new Error("Please verify your email first");
-
         if (user.status === "suspended") throw new Error("Your account has been suspended");
 
         return {
@@ -53,13 +52,11 @@ const handler = NextAuth({
       return session;
     },
   },
-  pages: {
-    signIn: "/login",
-  },
-  session: {
-    strategy: "jwt",
-  },
+  pages: { signIn: "/login" },
+  session: { strategy: "jwt" },
   secret: process.env.NEXTAUTH_SECRET,
-});
+};
 
+const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
+export { authOptions };
