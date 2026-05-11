@@ -9,7 +9,11 @@ function generateOTP() {
 }
 
 function generateAccountNumber() {
-  return Math.floor(1000000000 + Math.random() * 9000000000).toString();
+  // Generate a proper 16-digit account number
+  // Starts with 4 (like Visa) for authenticity
+  const prefix = "4532";
+  const random = Math.floor(Math.random() * 1000000000000).toString().padStart(12, "0");
+  return prefix + random;
 }
 
 export async function POST(req) {
