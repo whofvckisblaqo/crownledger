@@ -1,6 +1,6 @@
 import "./globals.css";
-import Navbar from "@/components/Navbar";
 import SessionWrapper from "@/components/SessionWrapper";
+import TawkTo from "@/components/TawkTo";
 
 export const metadata = {
   title: "Crownledger — Private Banking",
@@ -20,6 +20,7 @@ export default function RootLayout({ children }) {
         <SessionWrapper>
           {children}
         </SessionWrapper>
+        <TawkTo />
       </body>
     </html>
   );
