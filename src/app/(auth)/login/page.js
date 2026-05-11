@@ -17,43 +17,52 @@ export default function LoginPage() {
     setError("");
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError("");
 
-    if (!form.email || !form.password) {
-      setError("Please fill in all fields.");
+  if (!form.email || !form.password) {
+    setError("Please fill in all fields.");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const result = await signIn("credentials", {
+      email: form.email,
+      password: form.password,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      setError(result.error);
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
+    // Retry getSession up to 5 times to handle mobile network delays
+    let session = null;
+    let attempts = 0;
 
-    try {
-      const result = await signIn("credentials", {
-        email: form.email,
-        password: form.password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        setError(result.error);
-        return;
-      }
-
-      // Wait for session to update then check role
-      const session = await getSession();
-
-      if (session?.user?.role === "admin") {
-        router.push("/admin");
-      } else {
-        router.push("/dashboard");
-      }
-    } catch (err) {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
+    while (!session && attempts < 5) {
+      await new Promise((r) => setTimeout(r, 500));
+      const { getSession } = await import("next-auth/react");
+      session = await getSession();
+      attempts++;
     }
-  };
+
+    if (session?.user?.role === "admin") {
+      router.push("/admin");
+    } else {
+      router.push("/dashboard");
+    }
+  } catch (err) {
+    setError("Something went wrong. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
