@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
 import connectDB from "@/lib/mongodb";
 import Account from "@/models/Account";
 
 export async function GET() {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
     }
@@ -13,7 +14,6 @@ export async function GET() {
     await connectDB();
 
     const accounts = await Account.find({ userId: session.user.id });
-
     return NextResponse.json({ accounts }, { status: 200 });
   } catch (err) {
     console.error(err);
