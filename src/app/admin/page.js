@@ -209,6 +209,16 @@ export default function AdminPage() {
       label: "Credit Account", key: "credit",
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>,
     },
+    {
+      label: "Settings",
+      key: "settings",
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
+        </svg>
+      ),
+    },
   ];
 
   const stats = [
@@ -379,18 +389,30 @@ export default function AdminPage() {
 
         <nav className="flex-1 p-4 flex flex-col gap-1 overflow-y-auto">
           {navItems.map((item) => (
-            <button
-              key={item.key}
-              onClick={() => { setActiveTab(item.key); setSidebarOpen(false); }}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 w-full text-left
+            item.key === "settings" ? (
+              <Link
+                key={item.key}
+                href="/admin/settings"
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 w-full text-left
+                text-gray-400 hover:text-white hover:bg-gray-800`}
+              >
+                {item.icon}
+                {item.label}
+              </Link>
+            ) : (
+              <button
+                key={item.key}
+                onClick={() => { setActiveTab(item.key); setSidebarOpen(false); }}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 w-full text-left
                 ${activeTab === item.key ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white hover:bg-gray-800"}`}
-            >
-              {item.icon}
-              {item.label}
-              {item.key === "users" && (
-                <span className="ml-auto bg-gray-700 text-gray-300 text-xs font-bold px-2 py-0.5 rounded-full">{users.length}</span>
-              )}
-            </button>
+              >
+                {item.icon}
+                {item.label}
+                {item.key === "users" && (
+                  <span className="ml-auto bg-gray-700 text-gray-300 text-xs font-bold px-2 py-0.5 rounded-full">{users.length}</span>
+                )}
+              </button>
+            )
           ))}
         </nav>
 
@@ -518,7 +540,16 @@ export default function AdminPage() {
                           {tx.type?.[0]?.toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-gray-900 truncate">{tx.description || tx.type}</p>
+                          <p className="text-xs font-medium text-gray-900 truncate">
+                            {(() => {
+                              try {
+                                const parsed = JSON.parse(tx.description);
+                                return parsed.note || parsed.recipientName || tx.type;
+                              } catch {
+                                return tx.description || tx.type;
+                              }
+                            })()}
+                          </p>
                           <p className="text-xs text-gray-400">{new Date(tx.createdAt).toLocaleDateString()}</p>
                         </div>
                         <p className="text-sm font-bold text-gray-900 flex-shrink-0">${tx.amount?.toFixed(2)}</p>
