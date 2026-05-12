@@ -3,6 +3,7 @@ import connectDB from "@/lib/mongodb";
 import Transaction from "@/models/Transaction";
 import Account from "@/models/Account";
 import User from "@/models/User";
+import Notification from "@/models/Notification";
 
 export async function GET() {
   try {
@@ -85,13 +86,28 @@ export async function PATCH(req) {
     // Get sender email — fallback to direct DB lookup
     let senderEmail = transaction.senderId?.email;
     let senderFirstName = transaction.senderId?.firstName;
+    let senderId = transaction.senderId?._id || transaction.senderId;
 
     if (!senderEmail && transaction.senderId) {
-      const senderUser = await User.findById(
-        transaction.senderId?._id || transaction.senderId
-      );
+      const senderUser = await User.findById(senderId);
       senderEmail = senderUser?.email;
       senderFirstName = senderUser?.firstName;
+    }
+
+    const isApproved = status === "completed";
+    const isFailed = status === "failed";
+
+    // Create notification for user
+    if (senderId && (isApproved || isFailed)) {
+      await Notification.create({
+        userId: senderId,
+        title: isApproved ? "Transfer Approved" : "Transfer Declined",
+        message: isApproved
+          ? `Your transfer of $${transaction.amount.toFixed(2)} to ${recipientName} has been approved.`
+          : `Your transfer of $${transaction.amount.toFixed(2)} to ${recipientName} was declined.`,
+        type: isApproved ? "success" : "warning",
+        link: "/dashboard/transactions",
+      });
     }
 
     console.log("📧 Sending email to:", senderEmail);
@@ -99,9 +115,6 @@ export async function PATCH(req) {
     if (senderEmail) {
       const { Resend } = await import("resend");
       const resend = new Resend(process.env.RESEND_API_KEY);
-
-      const isApproved = status === "completed";
-      const isFailed = status === "failed";
 
       if (isApproved || isFailed) {
         try {

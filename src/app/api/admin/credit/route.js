@@ -3,6 +3,7 @@ import connectDB from "@/lib/mongodb";
 import Account from "@/models/Account";
 import Transaction from "@/models/Transaction";
 import User from "@/models/User";
+import Notification from "@/models/Notification";
 
 export async function POST(req) {
   try {
@@ -51,6 +52,15 @@ export async function POST(req) {
       status: "completed",
       description: description || "Admin deposit",
       reference,
+    });
+
+    // Notify user of credit
+    await Notification.create({
+      userId,
+      title: "Account Credited",
+      message: `$${Number(amount).toFixed(2)} has been deposited into your ${accountType} account.`,
+      type: "deposit",
+      link: "/dashboard/transactions",
     });
 
     return NextResponse.json(

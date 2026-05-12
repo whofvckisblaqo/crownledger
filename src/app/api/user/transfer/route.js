@@ -5,6 +5,7 @@ import connectDB from "@/lib/mongodb";
 import Account from "@/models/Account";
 import Transaction from "@/models/Transaction";
 import User from "@/models/User";
+import Notification from "@/models/Notification";
 
 export async function POST(req) {
   try {
@@ -97,6 +98,15 @@ export async function POST(req) {
     });
 
     console.log("✅ Transaction created:", transaction._id);
+
+    // Create notification for user
+    await Notification.create({
+      userId: session.user.id,
+      title: "Transfer Submitted",
+      message: `Your transfer of $${Number(amount).toFixed(2)} to ${recipientName} is pending approval.`,
+      type: "transfer",
+      link: "/dashboard/transactions",
+    });
 
     // Send pending email
     try {
