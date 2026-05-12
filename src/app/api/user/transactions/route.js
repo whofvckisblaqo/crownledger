@@ -26,9 +26,18 @@ export async function GET() {
       ],
     })
       .sort({ createdAt: -1 })
-      .limit(50);
+      .limit(50)
+      .lean(); // ← returns plain JS objects with _id as string
 
-    return NextResponse.json({ transactions }, { status: 200 });
+    // Serialize _id to string
+    const serialized = transactions.map((tx) => ({
+      ...tx,
+      _id: tx._id.toString(),
+      senderId: tx.senderId?.toString() || null,
+      receiverId: tx.receiverId?.toString() || null,
+    }));
+
+    return NextResponse.json({ transactions: serialized }, { status: 200 });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ message: "Something went wrong." }, { status: 500 });

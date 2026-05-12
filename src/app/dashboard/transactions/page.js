@@ -149,7 +149,7 @@ export default function TransactionsPage() {
                   {filtered.map((tx, i) => {
                     const credit = isCredit(tx);
                     return (
-                      <div key={i} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition">
+                     <Link key={i} href={`/dashboard/transactions/${tx._id}`} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition cursor-pointer">
                         <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm
                           ${credit ? "bg-green-50 text-green-500" : "bg-red-50 text-red-400"}`}>
                           {tx.type?.[0]?.toUpperCase()}
@@ -175,7 +175,7 @@ export default function TransactionsPage() {
                             {tx.status}
                           </p>
                         </div>
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>
