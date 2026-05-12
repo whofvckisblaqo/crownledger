@@ -45,6 +45,29 @@ export default function DashboardPage() {
   const savings = accounts.find((a) => a.type === "savings");
   const totalBalance = (checking?.balance || 0) + (savings?.balance || 0);
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  };
+
+  const getSubGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Here's your financial overview for today.";
+    if (hour < 17) return "Welcome back. Your accounts are looking great.";
+    return "Here's a summary of your accounts today.";
+  };
+
+  const getDescription = (tx) => {
+    try {
+      const parsed = JSON.parse(tx.description);
+      return parsed.note || parsed.recipientName || tx.type;
+    } catch {
+      return tx.description || tx.type;
+    }
+  };
+
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -88,15 +111,17 @@ export default function DashboardPage() {
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>,
     },
     {
+      label: "Statement", href: "/dashboard/statement",
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>,
+    },
+    {
+      label: "Verify ID", href: "/dashboard/kyc",
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,
+    },
+    {
       label: "Settings", href: "/dashboard/settings",
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" /></svg>,
     },
-    { label: "Statement", href: "/dashboard/statement", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg> 
-      
-    },
-    { label: "Verify ID", href: "/dashboard/kyc", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-
-     },
   ];
 
   return (
@@ -176,10 +201,15 @@ export default function DashboardPage() {
               </svg>
             </button>
             <div>
+              <p className="text-sm text-gray-400 font-medium">
+                {getGreeting()}, {session?.user?.firstName} 👋
+              </p>
               <h1 className="text-lg font-bold text-gray-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
-                Good morning, {session?.user?.firstName} 👋
+                Welcome to Crownledger
               </h1>
-              <p className="text-xs text-gray-400">Here's what's happening with your account today.</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {getSubGreeting()}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -217,10 +247,30 @@ export default function DashboardPage() {
               {/* Balance cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { label: "Total Balance", value: `$${totalBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, sub: "All accounts combined", color: "text-gray-900" },
-                  { label: "Checking Account", value: `$${(checking?.balance || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, sub: checking?.accountNumber ? `****${checking.accountNumber.slice(-4)}` : "—", color: "text-gray-900" },
-                  { label: "Savings Account", value: `$${(savings?.balance || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, sub: savings?.accountNumber ? `****${savings.accountNumber.slice(-4)}` : "—", color: "text-gray-900" },
-                  { label: "Credit Used", value: "$0.00", sub: "No credit balance", color: "text-gray-900" },
+                  {
+                    label: "Total Balance",
+                    value: `$${totalBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+                    sub: "All accounts combined",
+                    color: "text-gray-900",
+                  },
+                  {
+                    label: "Checking Account",
+                    value: `$${(checking?.balance || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+                    sub: checking?.accountNumber ? `****${checking.accountNumber.slice(-4)}` : "—",
+                    color: "text-gray-900",
+                  },
+                  {
+                    label: "Savings Account",
+                    value: `$${(savings?.balance || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+                    sub: savings?.accountNumber ? `****${savings.accountNumber.slice(-4)}` : "—",
+                    color: "text-gray-900",
+                  },
+                  {
+                    label: "Transactions",
+                    value: transactions.length.toString(),
+                    sub: `${transactions.filter(tx => tx.status === "pending").length} pending`,
+                    color: "text-gray-900",
+                  },
                 ].map((card, i) => (
                   <div key={i} className="bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-sm transition">
                     <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">{card.label}</p>
@@ -238,20 +288,26 @@ export default function DashboardPage() {
                 {/* Credit card */}
                 <div className="lg:col-span-1">
                   <h2 className="text-sm font-semibold text-gray-700 mb-3" style={{ fontFamily: "'Outfit', sans-serif" }}>My Card</h2>
-                  <div className="bg-blue-600 rounded-2xl p-6 text-white">
-                    <div className="flex justify-between items-start mb-8">
-                      <span className="text-sm font-bold" style={{ fontFamily: "'Outfit', sans-serif" }}>Crownledger</span>
-                      <div className="w-8 h-6 bg-yellow-400 rounded-sm opacity-90" />
-                    </div>
-                    <p className="text-sm tracking-[3px] opacity-75 mb-4">•••• •••• •••• {checking?.accountNumber?.slice(-4) || "0000"}</p>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-xs opacity-60 mb-1">Card Holder</p>
-                        <p className="text-sm font-semibold">{session?.user?.firstName} {session?.user?.lastName}</p>
+                  <div className="bg-blue-600 rounded-2xl p-6 text-white relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/4" />
+                    <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full bg-white/5 translate-y-1/2 -translate-x-1/4" />
+                    <div className="relative">
+                      <div className="flex justify-between items-start mb-8">
+                        <span className="text-sm font-bold" style={{ fontFamily: "'Outfit', sans-serif" }}>Crownledger</span>
+                        <div className="w-8 h-6 bg-yellow-400 rounded-sm opacity-90" />
                       </div>
-                      <div>
-                        <p className="text-xs opacity-60 mb-1">Expires</p>
-                        <p className="text-sm font-semibold">05 / 29</p>
+                      <p className="text-sm tracking-[3px] opacity-75 mb-4">
+                        •••• •••• •••• {checking?.accountNumber?.slice(-4) || "0000"}
+                      </p>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="text-xs opacity-60 mb-1">Card Holder</p>
+                          <p className="text-sm font-semibold">{session?.user?.firstName} {session?.user?.lastName}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs opacity-60 mb-1">Expires</p>
+                          <p className="text-sm font-semibold">05 / 29</p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -263,7 +319,11 @@ export default function DashboardPage() {
                       { label: "Savings", href: "/dashboard/savings", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z" /><path d="M12 6v6l4 2" /></svg> },
                       { label: "Pay", href: "/dashboard/card", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></svg> },
                     ].map((action, i) => (
-                      <Link key={i} href={action.href} className="flex flex-col items-center gap-2 bg-white border border-gray-100 rounded-xl p-3 hover:border-blue-200 hover:bg-blue-50 transition group">
+                      <Link
+                        key={i}
+                        href={action.href}
+                        className="flex flex-col items-center gap-2 bg-white border border-gray-100 rounded-xl p-3 hover:border-blue-200 hover:bg-blue-50 transition group"
+                      >
                         <span className="text-gray-400 group-hover:text-blue-600 transition">{action.icon}</span>
                         <span className="text-xs font-medium text-gray-500 group-hover:text-blue-600 transition">{action.label}</span>
                       </Link>
@@ -274,8 +334,12 @@ export default function DashboardPage() {
                 {/* Transactions */}
                 <div className="lg:col-span-2">
                   <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-sm font-semibold text-gray-700" style={{ fontFamily: "'Outfit', sans-serif" }}>Recent Transactions</h2>
-                    <Link href="/dashboard/transactions" className="text-xs text-blue-600 font-medium hover:underline">View all</Link>
+                    <h2 className="text-sm font-semibold text-gray-700" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                      Recent Transactions
+                    </h2>
+                    <Link href="/dashboard/transactions" className="text-xs text-blue-600 font-medium hover:underline">
+                      View all
+                    </Link>
                   </div>
                   <div className="bg-white rounded-2xl border border-gray-100">
                     {transactions.length === 0 ? (
@@ -294,21 +358,45 @@ export default function DashboardPage() {
                     ) : (
                       <div className="divide-y divide-gray-50">
                         {transactions.slice(0, 5).map((tx, i) => {
-                          const isCredit = tx.receiverAccount === checking?.accountNumber || tx.receiverAccount === savings?.accountNumber;
+                          const isCredit =
+                            tx.type === "deposit" ||
+                            tx.receiverAccount === checking?.accountNumber ||
+                            tx.receiverAccount === savings?.accountNumber;
                           return (
-                            <div key={i} className="flex items-center gap-4 p-4 hover:bg-gray-50 transition">
+                            <Link
+                              key={i}
+                              href={`/dashboard/transactions/${tx._id}`}
+                              className="flex items-center gap-4 p-4 hover:bg-gray-50 transition cursor-pointer group"
+                            >
                               <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm
-                                ${isCredit ? "bg-green-50 text-green-500" : "bg-red-50 text-red-400"}`}>
+                                ${isCredit ? "bg-green-50 text-green-500" : tx.status === "pending" ? "bg-yellow-50 text-yellow-500" : "bg-red-50 text-red-400"}`}>
                                 {tx.type?.[0]?.toUpperCase()}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 truncate">{tx.description || tx.type}</p>
-                                <p className="text-xs text-gray-400">{new Date(tx.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                                <p className="text-sm font-medium text-gray-900 truncate capitalize">
+                                  {getDescription(tx)}
+                                </p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <p className="text-xs text-gray-400">
+                                    {new Date(tx.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                  </p>
+                                  <span className={`text-xs font-medium px-1.5 py-0.5 rounded capitalize
+                                    ${tx.status === "completed" ? "text-green-500"
+                                      : tx.status === "pending" ? "text-yellow-500"
+                                      : "text-red-400"}`}>
+                                    {tx.status}
+                                  </span>
+                                </div>
                               </div>
-                              <p className={`text-sm font-semibold flex-shrink-0 ${isCredit ? "text-green-500" : "text-red-500"}`}>
-                                {isCredit ? "+" : "-"}${tx.amount?.toFixed(2)}
-                              </p>
-                            </div>
+                              <div className="flex items-center gap-2">
+                                <p className={`text-sm font-semibold flex-shrink-0 ${isCredit ? "text-green-500" : "text-red-500"}`}>
+                                  {isCredit ? "+" : "-"}${tx.amount?.toFixed(2)}
+                                </p>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:stroke-blue-500 transition">
+                                  <path d="M5 12h14M12 5l7 7-7 7" />
+                                </svg>
+                              </div>
+                            </Link>
                           );
                         })}
                       </div>
@@ -323,12 +411,16 @@ export default function DashboardPage() {
                 {/* Account summary */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-sm font-semibold text-gray-700" style={{ fontFamily: "'Outfit', sans-serif" }}>Account Summary</h2>
-                    <Link href="/dashboard/accounts" className="text-xs text-blue-600 font-medium hover:underline">View all</Link>
+                    <h2 className="text-sm font-semibold text-gray-700" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                      Account Summary
+                    </h2>
+                    <Link href="/dashboard/accounts" className="text-xs text-blue-600 font-medium hover:underline">
+                      View all
+                    </Link>
                   </div>
                   <div className="space-y-4">
                     {accounts.map((acc, i) => (
-                      <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                      <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-blue-50/30 transition">
                         <div className="flex items-center gap-3">
                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${acc.type === "savings" ? "bg-green-100" : "bg-blue-100"}`}>
                             {acc.type === "savings" ? (
@@ -347,7 +439,9 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-bold text-gray-900">${acc.balance?.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+                          <p className="text-sm font-bold text-gray-900">
+                            ${acc.balance?.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                          </p>
                           <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${acc.status === "active" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"}`}>
                             {acc.status}
                           </span>
@@ -362,9 +456,11 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Quick stats */}
+                {/* Account info */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                  <h2 className="text-sm font-semibold text-gray-700 mb-4" style={{ fontFamily: "'Outfit', sans-serif" }}>Account Info</h2>
+                  <h2 className="text-sm font-semibold text-gray-700 mb-4" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                    Account Info
+                  </h2>
                   <div className="space-y-3">
                     {[
                       { label: "Full Name", value: `${session?.user?.firstName} ${session?.user?.lastName}` },
@@ -372,12 +468,34 @@ export default function DashboardPage() {
                       { label: "Account Type", value: "Premium" },
                       { label: "Total Accounts", value: accounts.length.toString() },
                       { label: "Total Transactions", value: transactions.length.toString() },
+                      { label: "Pending Transactions", value: transactions.filter(tx => tx.status === "pending").length.toString() },
                       { label: "Member Since", value: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }) },
                     ].map((item, i) => (
                       <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                         <span className="text-xs text-gray-400 font-medium">{item.label}</span>
-                        <span className="text-xs font-semibold text-gray-700 truncate max-w-[180px] text-right">{item.value}</span>
+                        <span className="text-xs font-semibold text-gray-700 truncate max-w-[180px] text-right">
+                          {item.value}
+                        </span>
                       </div>
+                    ))}
+                  </div>
+
+                  {/* Quick links */}
+                  <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-gray-100">
+                    {[
+                      { label: "Statement", href: "/dashboard/statement" },
+                      { label: "Verify ID", href: "/dashboard/kyc" },
+                      { label: "Settings", href: "/dashboard/settings" },
+                      { label: "Support", href: "/contact" },
+                    ].map((link, i) => (
+                      <Link
+                        key={i}
+                        href={link.href}
+                        className="text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl transition text-center"
+                        style={{ fontFamily: "'Outfit', sans-serif" }}
+                      >
+                        {link.label}
+                      </Link>
                     ))}
                   </div>
                 </div>
