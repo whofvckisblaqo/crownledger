@@ -79,10 +79,10 @@ export default function KYCPage() {
     formData.append("upload_preset", "crownledger_kyc");
     formData.append("cloud_name", "dp6reb4rt");
 
-    const res = await fetch(
-      "https://api.cloudinary.com/v1_1/dp6reb4rt/image/upload",
-      { method: "POST", body: formData }
-    );
+   const res = await fetch(
+  "https://api.cloudinary.com/v1_1/dpaqiub5f/image/upload",
+  { method: "POST", body: formData }
+);
     const data = await res.json();
     return data.secure_url;
   };
