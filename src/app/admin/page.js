@@ -8,6 +8,8 @@ export default function AdminPage() {
   const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  
+  // Existing state
   const [users, setUsers] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -32,10 +34,20 @@ export default function AdminPage() {
   const [userAccounts, setUserAccounts] = useState([]);
   const [userSearch, setUserSearch] = useState("");
 
+  // KYC specific state
+  const [kycs, setKycs] = useState([]);
+  const [kycsLoading, setKycsLoading] = useState(true);
+  const [kycSearch, setKycSearch] = useState("");
+  const [selectedKyc, setSelectedKyc] = useState(null);
+  const [kycModalOpen, setKycModalOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [kycActionLoading, setKycActionLoading] = useState(false);
+
   useEffect(() => {
     fetchUsers();
     fetchTransactions();
     fetchAccounts();
+    fetchKycs();
   }, []);
 
   const fetchUsers = async () => {
@@ -77,6 +89,19 @@ export default function AdminPage() {
     }
   };
 
+  const fetchKycs = async () => {
+    setKycsLoading(true);
+    try {
+      const res = await fetch("/api/admin/kyc");
+      const data = await res.json();
+      setKycs(data.kycs || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setKycsLoading(false);
+    }
+  };
+
   const fetchUserAccounts = async (userId) => {
     try {
       const res = await fetch(`/api/admin/accounts?userId=${userId}`);
@@ -84,6 +109,24 @@ export default function AdminPage() {
       setUserAccounts(data.accounts || []);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleKycAction = async (kycId, status) => {
+    setKycActionLoading(true);
+    try {
+      await fetch("/api/admin/kyc", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kycId, status, rejectionReason }),
+      });
+      setKycModalOpen(false);
+      setRejectionReason("");
+      fetchKycs();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setKycActionLoading(false);
     }
   };
 
@@ -204,6 +247,18 @@ export default function AdminPage() {
     {
       label: "Accounts", key: "accounts",
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></svg>,
+    },
+    {
+      label: "KYC",
+      key: "kyc",
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          <path d="M21 21v-2a4 4 0 0 0-3-3.87" />
+        </svg>
+      ),
     },
     {
       label: "Credit Account", key: "credit",
@@ -365,6 +420,126 @@ export default function AdminPage() {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* KYC Review Modal */}
+      {kycModalOpen && selectedKyc && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4" onClick={() => setKycModalOpen(false)}>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                KYC Review
+              </h2>
+              <button onClick={() => setKycModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center">
+                  <span className="text-white text-xl font-bold">
+                    {selectedKyc.userId?.firstName?.[0]}{selectedKyc.userId?.lastName?.[0]}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-gray-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                    {selectedKyc.userId?.firstName} {selectedKyc.userId?.lastName}
+                  </p>
+                  <p className="text-sm text-gray-400">{selectedKyc.userId?.email}</p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-2xl p-5 space-y-3">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Document Details</h3>
+                {[
+                  { label: "Document Type", value: selectedKyc.documentType?.replace("_", " ") },
+                  { label: "Document Number", value: selectedKyc.documentNumber },
+                  { label: "Date of Birth", value: selectedKyc.dateOfBirth },
+                  { label: "Address", value: selectedKyc.address },
+                  { label: "City", value: selectedKyc.city },
+                  { label: "Country", value: selectedKyc.country },
+                  { label: "Submitted", value: new Date(selectedKyc.submittedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
+                    <span className="text-xs text-gray-400 font-medium capitalize">{item.label}</span>
+                    <span className="text-xs font-semibold text-gray-700 capitalize">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                {selectedKyc.documentFront && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-2 font-medium">Front</p>
+                    <a href={selectedKyc.documentFront} target="_blank" rel="noopener noreferrer">
+                      <img src={selectedKyc.documentFront} alt="Front" className="w-full h-32 object-cover rounded-xl border border-gray-200 hover:opacity-80 transition cursor-pointer" />
+                    </a>
+                  </div>
+                )}
+                {selectedKyc.documentBack && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-2 font-medium">Back</p>
+                    <a href={selectedKyc.documentBack} target="_blank" rel="noopener noreferrer">
+                      <img src={selectedKyc.documentBack} alt="Back" className="w-full h-32 object-cover rounded-xl border border-gray-200 hover:opacity-80 transition cursor-pointer" />
+                    </a>
+                  </div>
+                )}
+                {selectedKyc.selfie && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-2 font-medium">Selfie</p>
+                    <a href={selectedKyc.selfie} target="_blank" rel="noopener noreferrer">
+                      <img src={selectedKyc.selfie} alt="Selfie" className="w-full h-32 object-cover rounded-xl border border-gray-200 hover:opacity-80 transition cursor-pointer" />
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {selectedKyc.status === "pending" && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                    Rejection Reason (if rejecting)
+                  </label>
+                  <input
+                    type="text"
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    placeholder="e.g. Document is blurry, expired ID..."
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition"
+                  />
+                </div>
+              )}
+
+              {selectedKyc.status === "pending" ? (
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleKycAction(selectedKyc._id, "rejected")}
+                    disabled={kycActionLoading}
+                    className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-sm py-3 rounded-xl transition border border-red-100 disabled:opacity-60"
+                    style={{ fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    Reject
+                  </button>
+                  <button
+                    onClick={() => handleKycAction(selectedKyc._id, "approved")}
+                    disabled={kycActionLoading}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold text-sm py-3 rounded-xl transition disabled:opacity-60"
+                    style={{ fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    {kycActionLoading ? "Processing..." : "Approve"}
+                  </button>
+                </div>
+              ) : (
+                <div className={`text-center py-3 rounded-xl font-semibold text-sm
+                  ${selectedKyc.status === "approved" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"}`}>
+                  {selectedKyc.status === "approved" ? "✅ Already Approved" : "❌ Already Rejected"}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -861,6 +1036,122 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* KYC tab */}
+          {activeTab === "kyc" && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Search by name or email..."
+                    value={kycSearch}
+                    onChange={(e) => setKycSearch(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition bg-white"
+                  />
+                </div>
+                <button onClick={fetchKycs} className="flex items-center gap-2 bg-white border border-gray-200 hover:border-blue-300 text-gray-600 hover:text-blue-600 text-sm font-medium px-4 py-2.5 rounded-xl transition">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                  </svg>
+                  Refresh
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { label: "Total Submitted", value: kycs.length, color: "text-blue-600" },
+                  { label: "Pending Review", value: kycs.filter(k => k.status === "pending").length, color: "text-yellow-600" },
+                  { label: "Approved", value: kycs.filter(k => k.status === "approved").length, color: "text-green-600" },
+                ].map((stat, i) => (
+                  <div key={i} className="bg-white rounded-2xl border border-gray-100 p-5 text-center">
+                    <p className="text-xs text-gray-400 font-medium mb-2">{stat.label}</p>
+                    <p className={`text-3xl font-bold ${stat.color}`} style={{ fontFamily: "'Outfit', sans-serif" }}>
+                      {stat.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                {kycsLoading ? (
+                  <div className="flex items-center justify-center py-16">
+                    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : kycs.length === 0 ? (
+                  <div className="text-center py-16">
+                    <p className="text-sm text-gray-400 font-medium">No KYC submissions yet</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-50">
+                          {["User", "Email", "Document", "Country", "Submitted", "Status", "Actions"].map((h) => (
+                            <th key={h} className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {kycs
+                          .filter(k =>
+                            `${k.userId?.firstName} ${k.userId?.lastName}`.toLowerCase().includes(kycSearch.toLowerCase()) ||
+                            k.userId?.email?.toLowerCase().includes(kycSearch.toLowerCase())
+                          )
+                          .map((kyc, i) => (
+                            <tr key={i} className="hover:bg-gray-50 transition">
+                              <td className="px-5 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                                    <span className="text-white text-xs font-bold">
+                                      {kyc.userId?.firstName?.[0]}{kyc.userId?.lastName?.[0]}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm font-medium text-gray-900 whitespace-nowrap">
+                                    {kyc.userId?.firstName} {kyc.userId?.lastName}
+                                  </p>
+                                </div>
+                              </td>
+                              <td className="px-5 py-4"><p className="text-sm text-gray-500 whitespace-nowrap">{kyc.userId?.email}</p></td>
+                              <td className="px-5 py-4">
+                                <span className="text-xs font-semibold px-2 py-1 rounded-lg bg-gray-50 text-gray-600 capitalize whitespace-nowrap">
+                                  {kyc.documentType?.replace("_", " ")}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4"><p className="text-sm text-gray-500 whitespace-nowrap">{kyc.country}</p></td>
+                              <td className="px-5 py-4">
+                                <p className="text-sm text-gray-500 whitespace-nowrap">
+                                  {new Date(kyc.submittedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                </p>
+                              </td>
+                              <td className="px-5 py-4">
+                                <span className={`text-xs font-semibold px-2 py-1 rounded-lg capitalize whitespace-nowrap
+                                  ${kyc.status === "approved" ? "bg-green-50 text-green-600"
+                                    : kyc.status === "pending" ? "bg-yellow-50 text-yellow-600"
+                                    : "bg-red-50 text-red-500"}`}>
+                                  {kyc.status}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4">
+                                <button
+                                  onClick={() => { setSelectedKyc(kyc); setKycModalOpen(true); setRejectionReason(""); }}
+                                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition whitespace-nowrap"
+                                >
+                                  Review
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Credit Account tab */}
           {activeTab === "credit" && (
             <div className="max-w-2xl space-y-6">
@@ -1117,7 +1408,6 @@ export default function AdminPage() {
                   )}
                 </div>
               </div>
-
             </div>
           )}
 
