@@ -7,10 +7,8 @@ export const metadata = {
   title: "Crownledger — Private Banking",
   description: "Banking built for the modern world. Open a free account today.",
   icons: {
-    icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/favicon.ico", sizes: "any" },
-    ],
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
     apple: "/favicon.svg",
   },
   themeColor: "#1a56db",
@@ -28,7 +26,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <link rel="alternate icon" href="/favicon.ico" />
+        <link rel="shortcut icon" href="/favicon.svg" />
         <link rel="apple-touch-icon" href="/favicon.svg" />
         <meta name="theme-color" content="#1a56db" />
         <link
