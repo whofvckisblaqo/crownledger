@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import NotificationBell from "@/components/NotificationBell";
+import ExchangeRates from "@/components/ExchangeRates";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -380,7 +381,7 @@ export default function DashboardPage() {
                                   <p className="text-xs text-gray-400">
                                     {new Date(tx.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                                   </p>
-                                  <span className={`text-xs font-medium px-1.5 py-0.5 rounded capitalize
+                                  <span className={`text-xs font-medium capitalize
                                     ${tx.status === "completed" ? "text-green-500"
                                       : tx.status === "pending" ? "text-yellow-500"
                                       : "text-red-400"}`}>
@@ -406,7 +407,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Bottom row */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* Account summary */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-6">
@@ -499,6 +500,9 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 </div>
+
+                {/* Exchange Rates */}
+                <ExchangeRates />
 
               </div>
             </>
