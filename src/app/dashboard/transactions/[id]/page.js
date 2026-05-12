@@ -61,36 +61,41 @@ export default function ReceiptPage({ params }) {
     }
   };
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     setDownloading(true);
-    try {
-      const { default: jsPDF } = await import("jspdf");
-      const { default: html2canvas } = await import("html2canvas");
 
-      const element = receiptRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      });
+    const style = document.createElement("style");
+    style.id = "print-style";
+    style.innerHTML = `
+      @media print {
+        body * { visibility: hidden; }
+        #receipt-print, #receipt-print * { visibility: visible; }
+        #receipt-print {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          z-index: 9999;
+          background: white;
+          padding: 20px;
+        }
+        .no-print { display: none !important; }
+      }
+    `;
+    document.head.appendChild(style);
 
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
+    const receipt = receiptRef.current;
+    if (receipt) receipt.id = "receipt-print";
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`crownledger-receipt-${transaction?.reference || id}.pdf`);
-    } catch (err) {
-      console.error("PDF generation failed:", err);
-    } finally {
-      setDownloading(false);
-    }
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => {
+        const s = document.getElementById("print-style");
+        if (s) s.remove();
+        if (receipt) receipt.removeAttribute("id");
+        setDownloading(false);
+      }, 1000);
+    }, 300);
   };
 
   if (loading) {
@@ -125,9 +130,9 @@ export default function ReceiptPage({ params }) {
   const details = getDescription(transaction);
 
   const statusConfig = {
-    completed: { label: "Completed", color: "text-green-600", bg: "bg-green-50", border: "border-green-100" },
-    pending: { label: "Pending", color: "text-yellow-600", bg: "bg-yellow-50", border: "border-yellow-100" },
-    failed: { label: "Declined", color: "text-red-500", bg: "bg-red-50", border: "border-red-100" },
+    completed: { label: "Completed", color: "text-green-600", bg: "bg-green-50", border: "border-green-100", dot: "bg-green-500" },
+    pending: { label: "Pending", color: "text-yellow-600", bg: "bg-yellow-50", border: "border-yellow-100", dot: "bg-yellow-500 animate-pulse" },
+    failed: { label: "Declined", color: "text-red-500", bg: "bg-red-50", border: "border-red-100", dot: "bg-red-500" },
   };
   const statusStyle = statusConfig[transaction.status] || statusConfig.completed;
 
@@ -135,7 +140,7 @@ export default function ReceiptPage({ params }) {
     <div className="min-h-screen bg-gray-50">
 
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 sm:px-6 py-4 flex items-center justify-between">
+      <div className="bg-white border-b border-gray-100 px-4 sm:px-6 py-4 flex items-center justify-between no-print">
         <div className="flex items-center gap-4">
           <Link href="/dashboard/transactions" className="text-gray-400 hover:text-gray-600 transition">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -161,7 +166,7 @@ export default function ReceiptPage({ params }) {
               <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 12a9 9 0 1 1-6.219-8.56" />
               </svg>
-              Generating...
+              Preparing...
             </>
           ) : (
             <>
@@ -186,7 +191,6 @@ export default function ReceiptPage({ params }) {
             className="px-8 py-8 text-white text-center relative overflow-hidden"
             style={{ background: "linear-gradient(135deg, #1a56db, #0f3a8a)" }}
           >
-            {/* Background circles */}
             <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/4" />
             <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full bg-white/5 translate-y-1/2 -translate-x-1/4" />
 
@@ -216,13 +220,19 @@ export default function ReceiptPage({ params }) {
                   </svg>
                 ) : (
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="15" y1="9" x2="9" y2="15" />
+                    <line x1="9" y1="9" x2="15" y2="15" />
                   </svg>
                 )}
               </div>
 
               <p className="text-blue-200 text-sm font-medium mb-1">
-                {transaction.status === "completed" ? "Transfer Completed" : transaction.status === "pending" ? "Transfer Pending" : "Transfer Declined"}
+                {transaction.status === "completed"
+                  ? "Transfer Completed"
+                  : transaction.status === "pending"
+                  ? "Transfer Pending"
+                  : "Transfer Declined"}
               </p>
               <p className="text-5xl font-bold mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>
                 ${transaction.amount?.toFixed(2)}
@@ -233,8 +243,8 @@ export default function ReceiptPage({ params }) {
 
           {/* Dotted divider */}
           <div className="relative py-4 bg-gray-50">
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-6 h-6 bg-gray-50 rounded-full -translate-x-1/2 border border-gray-100" />
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-6 h-6 bg-gray-50 rounded-full translate-x-1/2 border border-gray-100" />
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full -translate-x-1/2 border border-gray-200" />
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full translate-x-1/2 border border-gray-200" />
             <div className="border-t-2 border-dashed border-gray-200 mx-6" />
           </div>
 
@@ -244,7 +254,7 @@ export default function ReceiptPage({ params }) {
             {/* Status badge */}
             <div className="flex justify-center mb-2">
               <span className={`inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full border ${statusStyle.bg} ${statusStyle.color} ${statusStyle.border}`}>
-                <div className={`w-2 h-2 rounded-full ${transaction.status === "completed" ? "bg-green-500" : transaction.status === "pending" ? "bg-yellow-500 animate-pulse" : "bg-red-500"}`} />
+                <div className={`w-2 h-2 rounded-full ${statusStyle.dot}`} />
                 {statusStyle.label}
               </span>
             </div>
@@ -255,16 +265,19 @@ export default function ReceiptPage({ params }) {
                 Transaction Details
               </h3>
               {[
-                { label: "Reference Number", value: transaction.reference || "—" },
+                { label: "Reference Number", value: transaction.reference || "—", mono: true },
                 { label: "Transaction Type", value: transaction.type?.charAt(0).toUpperCase() + transaction.type?.slice(1) || "—" },
                 { label: "Date & Time", value: new Date(transaction.createdAt).toLocaleString("en-US", { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) },
                 { label: "Amount", value: `$${transaction.amount?.toFixed(2)} USD` },
-                { label: "Transfer Fee", value: "Free" },
+                { label: "Transfer Fee", value: "Free", green: true },
                 { label: "Total Charged", value: `$${transaction.amount?.toFixed(2)} USD` },
               ].map((item, i) => (
                 <div key={i} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
                   <span className="text-xs text-gray-400 font-medium">{item.label}</span>
-                  <span className={`text-xs font-semibold ${item.label === "Transfer Fee" ? "text-green-500" : item.label === "Reference Number" ? "text-blue-600 font-mono" : "text-gray-700"}`}>
+                  <span className={`text-xs font-semibold
+                    ${item.green ? "text-green-500"
+                      : item.mono ? "text-blue-600 font-mono"
+                      : "text-gray-700"}`}>
                     {item.value}
                   </span>
                 </div>
@@ -309,7 +322,7 @@ export default function ReceiptPage({ params }) {
               </div>
             )}
 
-            {/* Notice */}
+            {/* Notices */}
             {transaction.status === "pending" && (
               <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-4 flex items-start gap-2">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
@@ -327,7 +340,7 @@ export default function ReceiptPage({ params }) {
                   <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
                 <p className="text-xs text-red-600 leading-relaxed">
-                  This transfer was declined. No funds were deducted from your account. Contact support if you need assistance.
+                  This transfer was declined. No funds were deducted from your account.
                 </p>
               </div>
             )}
@@ -335,8 +348,8 @@ export default function ReceiptPage({ params }) {
 
           {/* Dotted divider */}
           <div className="relative py-4 bg-gray-50">
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-6 h-6 bg-gray-50 rounded-full -translate-x-1/2 border border-gray-100" />
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-6 h-6 bg-gray-50 rounded-full translate-x-1/2 border border-gray-100" />
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full -translate-x-1/2 border border-gray-200" />
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full translate-x-1/2 border border-gray-200" />
             <div className="border-t-2 border-dashed border-gray-200 mx-6" />
           </div>
 
@@ -362,7 +375,7 @@ export default function ReceiptPage({ params }) {
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-3 mt-6">
+        <div className="flex gap-3 mt-6 no-print">
           <Link
             href="/dashboard/transactions"
             className="flex-1 bg-white border border-gray-200 hover:border-blue-300 text-gray-700 font-semibold text-sm py-3.5 rounded-xl transition text-center"
@@ -381,7 +394,7 @@ export default function ReceiptPage({ params }) {
                 <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                 </svg>
-                Generating PDF...
+                Preparing PDF...
               </>
             ) : (
               <>
