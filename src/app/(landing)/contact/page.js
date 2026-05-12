@@ -44,9 +44,9 @@ export default function ContactPage() {
         </svg>
       ),
       title: "Email Us",
-      value: "support@crownledgerapp.com",
+      value: "crownledgersupport@gmail.com",
       sub: "We reply within 24 hours",
-      href: "mailto:support@crownledgerapp.com",
+      href: "mailto:crownledgersupport@gmail.com",
     },
     {
       icon: (
