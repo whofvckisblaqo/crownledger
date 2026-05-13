@@ -86,7 +86,7 @@ if (parsedDesc.transferType === "internal" && transaction.receiverAccount) {
   });
 
   console.log("🔍 Receiver lookup:", transaction.receiverAccount, "→", receiverAccount?._id || "NOT FOUND");
-
+}
         if (receiverAccount) {
           await Account.findByIdAndUpdate(receiverAccount._id, {
             $inc: { balance: transaction.amount },
