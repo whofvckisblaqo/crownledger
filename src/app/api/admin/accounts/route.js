@@ -151,7 +151,7 @@ export async function PATCH(req) {
                 </div>` : ""}
 
                 <div style="text-align:center;margin-bottom:20px;">
-                  <a href="${isFrozen ? "mailto:support@crownledgerapp.com" : "https://www.crownledgerapp.com/dashboard"}"
+                  <a href="${isFrozen ? "mailto:crownledgersupport@gmail.com" : "https://www.crownledgerapp.com/dashboard"}"
                     style="display:inline-block;background:${isFrozen ? "#dc2626" : "#2563eb"};color:white;font-weight:600;font-size:14px;padding:14px 32px;border-radius:12px;text-decoration:none;">
                     ${isFrozen ? "Contact Support →" : "Go to Dashboard →"}
                   </a>
@@ -166,7 +166,7 @@ export async function PATCH(req) {
 
                 <div style="border-top:1px solid #e5e7eb;padding-top:20px;text-align:center;">
                   <p style="font-size:12px;color:#16a34a;font-weight:600;margin:0 0 8px;">🔒 FDIC Insured · 256-bit Encryption</p>
-                  <p style="color:#9ca3af;font-size:12px;margin:4px 0;">support@crownledgerapp.com · +1 (800) 276-9654</p>
+                  <p style="color:#9ca3af;font-size:12px;margin:4px 0;">crownledgersupport@gmail.com · +1 (800) 276-9654</p>
                   <p style="color:#d1d5db;font-size:11px;margin:8px 0 0;">© 2026 Crownledger Inc. · 123 Wall Street, New York, NY 10005</p>
                 </div>
               </div>
