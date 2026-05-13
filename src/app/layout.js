@@ -45,6 +45,34 @@ export default function RootLayout({ children }) {
             background-color: transparent !important;
             box-shadow: none !important;
           }
+
+          /* Scroll zoom animation */
+          .scroll-zoom {
+            opacity: 0;
+            transform: scale(0.92);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+          }
+          .scroll-zoom.visible {
+            opacity: 1;
+            transform: scale(1);
+          }
+
+          /* Scroll fade up animation */
+          .scroll-fade-up {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+          }
+          .scroll-fade-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+          }
+
+          /* Stagger delays */
+          .delay-100 { transition-delay: 0.1s; }
+          .delay-200 { transition-delay: 0.2s; }
+          .delay-300 { transition-delay: 0.3s; }
+          .delay-400 { transition-delay: 0.4s; }
         `}</style>
       </head>
       <body className="bg-white text-gray-900 antialiased">
