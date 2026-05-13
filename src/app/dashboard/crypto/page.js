@@ -118,7 +118,7 @@ export default function CryptoPage() {
             <h1 className="text-lg font-bold text-gray-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
               Crypto Wallet
             </h1>
-            <p className="text-xs text-gray-400">Demo Account — Live Prices</p>
+            <p className="text-xs text-gray-400">Live Prices · Top 20 Coins</p>
           </div>
         </div>
         <button
@@ -134,21 +134,6 @@ export default function CryptoPage() {
 
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
 
-        {/* Demo notice */}
-        <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-4 flex items-start gap-3">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
-            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          <div>
-            <p className="text-sm font-semibold text-yellow-800" style={{ fontFamily: "'Outfit', sans-serif" }}>
-              Demo Crypto Account
-            </p>
-            <p className="text-xs text-yellow-700 mt-0.5 leading-relaxed">
-              This is a demonstration crypto wallet with live market prices. All balances are for display purposes only and have no real monetary value.
-            </p>
-          </div>
-        </div>
-
         {/* Portfolio summary */}
         <div
           className="rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden"
@@ -163,7 +148,7 @@ export default function CryptoPage() {
                 <p className="text-5xl font-bold" style={{ fontFamily: "'Outfit', sans-serif" }}>
                   ${totalPortfolioValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <p className="text-blue-300 text-sm mt-1">Demo Balance</p>
+                <p className="text-blue-300 text-sm mt-1">Portfolio Balance</p>
               </div>
               <div className="bg-white/10 border border-white/20 rounded-2xl px-4 py-2">
                 <p className="text-xs text-blue-200">Wallets</p>
@@ -231,7 +216,6 @@ export default function CryptoPage() {
               <h3 className="text-sm font-bold text-gray-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
                 My Wallets
               </h3>
-              <p className="text-xs text-gray-400 mt-0.5">All balances start at 0.00 — Demo account</p>
             </div>
 
             {loading ? (
@@ -390,9 +374,7 @@ export default function CryptoPage() {
                   </svg>
                 </button>
                 <div className="relative">
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black mb-4 bg-white/20"
-                  >
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black mb-4 bg-white/20">
                     {selectedCoin.symbol.slice(0, 2)}
                   </div>
                   <h2 className="text-2xl font-bold mb-1" style={{ fontFamily: "'Outfit', sans-serif" }}>
@@ -450,26 +432,19 @@ export default function CryptoPage() {
                         </div>
                       </div>
 
-                      {/* Demo notice */}
-                      <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-3">
-                        <p className="text-xs text-yellow-700 text-center font-medium">
-                          ⚠️ Demo account — balances are for display only
-                        </p>
-                      </div>
-
-                      {/* Action buttons (demo) */}
+                      {/* Action buttons */}
                       <div className="grid grid-cols-2 gap-3">
                         <button
-                          className="py-3 rounded-xl text-sm font-semibold bg-green-50 text-green-600 border border-green-100 hover:bg-green-100 transition opacity-50 cursor-not-allowed"
-                          disabled
+                          className="py-3 rounded-xl text-sm font-semibold bg-green-50 text-green-600 border border-green-100 hover:bg-green-100 transition"
+                          style={{ fontFamily: "'Outfit', sans-serif" }}
                         >
-                          Buy (Demo)
+                          Buy
                         </button>
                         <button
-                          className="py-3 rounded-xl text-sm font-semibold bg-red-50 text-red-500 border border-red-100 hover:bg-red-100 transition opacity-50 cursor-not-allowed"
-                          disabled
+                          className="py-3 rounded-xl text-sm font-semibold bg-red-50 text-red-500 border border-red-100 hover:bg-red-100 transition"
+                          style={{ fontFamily: "'Outfit', sans-serif" }}
                         >
-                          Sell (Demo)
+                          Sell
                         </button>
                       </div>
                     </>
