@@ -59,7 +59,6 @@ export default function TransferPage() {
     setError("");
   };
 
-  // Lookup Crownledger users
   const handleLookup = async (query) => {
     setLookupQuery(query);
     if (query.length < 3) {
@@ -93,10 +92,32 @@ export default function TransferPage() {
 
   const handleStepOne = (e) => {
     e.preventDefault();
+
+    if (transferType === "own") {
+      const toAccount = accounts.find(
+        (a) => a.type === (form.fromAccount === "checking" ? "savings" : "checking")
+      );
+      if (!toAccount) {
+        setError("Destination account not found.");
+        return;
+      }
+      setForm({
+        ...form,
+        accountNumber: toAccount.accountNumber,
+        recipientName: `My ${form.fromAccount === "checking" ? "Savings" : "Checking"} Account`,
+        recipientBank: "Crownledger Private Banking",
+        routingNumber: "031176110",
+      });
+      setStep(2);
+      setError("");
+      return;
+    }
+
     if (transferType === "internal" && !selectedInternalUser) {
       setError("Please select a Crownledger user.");
       return;
     }
+
     if (transferType === "external") {
       if (!form.recipientName || !form.recipientBank || !form.routingNumber || !form.accountNumber) {
         setError("Please fill in all recipient details.");
@@ -107,6 +128,7 @@ export default function TransferPage() {
         return;
       }
     }
+
     setStep(2);
     setError("");
   };
@@ -129,7 +151,6 @@ export default function TransferPage() {
   const handleConfirm = async () => {
     setLoading(true);
     setError("");
-
     try {
       const res = await fetch("/api/user/transfer", {
         method: "POST",
@@ -140,14 +161,11 @@ export default function TransferPage() {
           recipientUserId: selectedInternalUser?.id || null,
         }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
         setError(data.message || "Transfer failed. Please try again.");
         return;
       }
-
       setReference(data.reference);
       setSuccess(true);
     } catch (err) {
@@ -179,6 +197,7 @@ export default function TransferPage() {
               <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
             </svg>
           </div>
+
           <h2 className="text-2xl font-bold text-gray-900 mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>
             Transfer Submitted!
           </h2>
@@ -187,9 +206,11 @@ export default function TransferPage() {
             <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
             Pending Approval
           </span>
+
           <p className="text-4xl font-bold text-blue-600 mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>
             ${Number(form.amount).toFixed(2)}
           </p>
+
           <p className="text-sm text-gray-500 mb-8">
             to <span className="font-semibold text-gray-900">{form.recipientName}</span>
             {transferType === "internal" && (
@@ -197,13 +218,19 @@ export default function TransferPage() {
                 Crownledger User
               </span>
             )}
+            {transferType === "own" && (
+              <span className="ml-1 text-xs font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                Own Account
+              </span>
+            )}
           </p>
+
           <div className="bg-gray-50 rounded-2xl p-4 text-left mb-6 space-y-3">
             {[
               { label: "Reference", value: reference },
               { label: "From", value: accountOptions.find((a) => a.value === form.fromAccount)?.label },
               { label: "To Account", value: `****${form.accountNumber.slice(-4)}` },
-              { label: "Transfer Type", value: transferType === "internal" ? "Crownledger Internal" : "External Bank" },
+              { label: "Transfer Type", value: transferType === "own" ? "Own Account" : transferType === "internal" ? "Crownledger Internal" : "External Bank" },
               { label: "Note", value: form.description || "No note" },
               { label: "Status", value: "Pending Approval" },
             ].map((item, i) => (
@@ -215,12 +242,14 @@ export default function TransferPage() {
               </div>
             ))}
           </div>
+
           <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6">
             <p className="text-xs text-blue-700 leading-relaxed">
               📧 A confirmation email has been sent to your inbox. You will receive another email once your transfer is approved or declined.
               {transferType === "internal" && " The recipient will also be notified upon approval."}
             </p>
           </div>
+
           <div className="flex gap-3">
             <button
               onClick={() => {
@@ -258,7 +287,9 @@ export default function TransferPage() {
           </svg>
         </Link>
         <div>
-          <h1 className="text-lg font-bold text-gray-900" style={{ fontFamily: "'Outfit', sans-serif" }}>Send Money</h1>
+          <h1 className="text-lg font-bold text-gray-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
+            Send Money
+          </h1>
           <p className="text-xs text-gray-400">Transfer funds to any account</p>
         </div>
       </div>
@@ -269,10 +300,8 @@ export default function TransferPage() {
         <div className="flex items-center gap-2 mb-8">
           {["Recipient", "Amount", "Confirm"].map((label, i) => (
             <div key={i} className="flex items-center gap-2 flex-1">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all
-                  ${step > i + 1 ? "bg-green-500 text-white" : step === i + 1 ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-400"}`}
-              >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all
+                ${step > i + 1 ? "bg-green-500 text-white" : step === i + 1 ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-400"}`}>
                 {step > i + 1 ? (
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M20 6L9 17l-5-5" />
@@ -311,10 +340,27 @@ export default function TransferPage() {
 
               {/* Transfer type toggle */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                  Transfer Type
-                </label>
-                <div className="grid grid-cols-2 gap-3">
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Transfer Type</label>
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTransferType("own");
+                      setSelectedInternalUser(null);
+                      setLookupQuery("");
+                      setForm({ ...form, recipientName: "My Savings Account", recipientBank: "Crownledger Private Banking", routingNumber: "031176110", accountNumber: "" });
+                      setError("");
+                    }}
+                    className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl text-xs font-semibold border transition
+                      ${transferType === "own" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-200 hover:border-blue-300"}`}
+                    style={{ fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z" /><path d="M12 6v6l4 2" />
+                    </svg>
+                    Own Account
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => {
@@ -324,7 +370,7 @@ export default function TransferPage() {
                       setForm({ ...form, recipientName: "", recipientBank: "", routingNumber: "", accountNumber: "" });
                       setError("");
                     }}
-                    className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold border transition
+                    className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl text-xs font-semibold border transition
                       ${transferType === "internal" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-200 hover:border-blue-300"}`}
                     style={{ fontFamily: "'Outfit', sans-serif" }}
                   >
@@ -333,6 +379,7 @@ export default function TransferPage() {
                     </svg>
                     Crownledger User
                   </button>
+
                   <button
                     type="button"
                     onClick={() => {
@@ -342,7 +389,7 @@ export default function TransferPage() {
                       setForm({ ...form, recipientName: "", recipientBank: "", routingNumber: "", accountNumber: "" });
                       setError("");
                     }}
-                    className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold border transition
+                    className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl text-xs font-semibold border transition
                       ${transferType === "external" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-200 hover:border-blue-300"}`}
                     style={{ fontFamily: "'Outfit', sans-serif" }}
                   >
@@ -360,7 +407,19 @@ export default function TransferPage() {
                 <select
                   name="fromAccount"
                   value={form.fromAccount}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setForm({
+                      ...form,
+                      fromAccount: val,
+                      accountNumber: transferType === "own"
+                        ? accounts.find((a) => a.type === (val === "checking" ? "savings" : "checking"))?.accountNumber || ""
+                        : form.accountNumber,
+                      recipientName: transferType === "own"
+                        ? `My ${val === "checking" ? "Savings" : "Checking"} Account`
+                        : form.recipientName,
+                    });
+                  }}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition bg-white"
                 >
                   {accountOptions.map((acc) => (
@@ -370,6 +429,37 @@ export default function TransferPage() {
                   ))}
                 </select>
               </div>
+
+              {/* Own account transfer */}
+              {transferType === "own" && (
+                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
+                  <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-3">
+                    Transferring To
+                  </p>
+                  <div className="flex items-center gap-3 bg-white rounded-xl p-4 border border-blue-100">
+                    <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z" /><path d="M12 6v6l4 2" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-900">
+                        My {form.fromAccount === "checking" ? "Savings" : "Checking"} Account
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        ****{accounts.find((a) => a.type === (form.fromAccount === "checking" ? "savings" : "checking"))?.accountNumber?.slice(-4) || "—"}
+                        {" · "}Balance: ${(accounts.find((a) => a.type === (form.fromAccount === "checking" ? "savings" : "checking"))?.balance || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  </div>
+                  <p className="text-xs text-blue-600 mt-3 text-center">
+                    Funds will be transferred instantly between your accounts upon approval.
+                  </p>
+                </div>
+              )}
 
               {/* Internal transfer — search Crownledger users */}
               {transferType === "internal" && (
@@ -393,7 +483,6 @@ export default function TransferPage() {
                     />
                   </div>
 
-                  {/* Search results */}
                   {lookupLoading && (
                     <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 rounded-xl">
                       <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -431,7 +520,6 @@ export default function TransferPage() {
                     </div>
                   )}
 
-                  {/* Selected user */}
                   {selectedInternalUser && (
                     <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -548,6 +636,11 @@ export default function TransferPage() {
                       Crownledger User
                     </span>
                   )}
+                  {transferType === "own" && (
+                    <span className="ml-1 text-xs font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                      Own Account
+                    </span>
+                  )}
                 </p>
               </div>
 
@@ -633,27 +726,38 @@ export default function TransferPage() {
                 <p className="text-sm text-gray-500">Review carefully before confirming.</p>
               </div>
 
-              <div className="bg-blue-600 rounded-2xl p-6 text-white text-center">
-                <p className="text-sm opacity-75 mb-2">You are sending</p>
-                <p className="text-5xl font-bold mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>
-                  ${Number(form.amount).toFixed(2)}
-                </p>
-                <p className="text-sm opacity-75">to <span className="font-semibold opacity-100">{form.recipientName}</span></p>
-                {transferType === "internal" && (
-                  <span className="inline-block mt-2 bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                    Crownledger Internal Transfer
-                  </span>
-                )}
+              <div className="bg-blue-600 rounded-2xl p-6 text-white text-center relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/4" />
+                <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full bg-white/5 translate-y-1/2 -translate-x-1/4" />
+                <div className="relative">
+                  <p className="text-sm opacity-75 mb-2">You are sending</p>
+                  <p className="text-5xl font-bold mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                    ${Number(form.amount).toFixed(2)}
+                  </p>
+                  <p className="text-sm opacity-75">
+                    to <span className="font-semibold opacity-100">{form.recipientName}</span>
+                  </p>
+                  {transferType === "own" && (
+                    <span className="inline-block mt-2 bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                      Own Account Transfer
+                    </span>
+                  )}
+                  {transferType === "internal" && (
+                    <span className="inline-block mt-2 bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                      Crownledger Internal Transfer
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="bg-gray-50 rounded-2xl p-5 space-y-3">
                 {[
                   { label: "From", value: accountOptions.find((a) => a.value === form.fromAccount)?.label },
                   { label: "Recipient", value: form.recipientName },
-                  { label: "Bank", value: transferType === "internal" ? "Crownledger Private Banking" : form.recipientBank },
+                  { label: "Bank", value: transferType === "own" || transferType === "internal" ? "Crownledger Private Banking" : form.recipientBank },
                   { label: "Account Number", value: `****${form.accountNumber.slice(-4)}` },
-                  { label: "Routing Number", value: transferType === "internal" ? "031176110" : form.routingNumber },
-                  { label: "Transfer Type", value: transferType === "internal" ? "Crownledger Internal" : "External Bank" },
+                  { label: "Routing Number", value: transferType === "external" ? form.routingNumber : "031176110" },
+                  { label: "Transfer Type", value: transferType === "own" ? "Own Account" : transferType === "internal" ? "Crownledger Internal" : "External Bank" },
                   { label: "Note", value: form.description || "No note" },
                   { label: "Transfer Fee", value: "Free" },
                 ].map((item, i) => (
@@ -670,13 +774,14 @@ export default function TransferPage() {
                 </div>
               </div>
 
-              {/* Notice */}
               <div className="bg-yellow-50 border border-yellow-100 rounded-xl px-4 py-3 flex items-start gap-2">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
                   <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
                 </svg>
                 <p className="text-xs text-yellow-700 leading-relaxed">
-                  {transferType === "internal"
+                  {transferType === "own"
+                    ? "This transfer between your own accounts will be reviewed and processed upon approval."
+                    : transferType === "internal"
                     ? "This transfer will be reviewed by our team. Once approved, the funds will be instantly credited to the recipient's Crownledger account."
                     : "Your transfer will be submitted as pending and must be approved by our team before funds are sent."
                   } You will receive an email notification once processed.
