@@ -10,30 +10,26 @@ import Notification from "@/models/Notification";
 export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
-
-    console.log("🔐 Session:", session?.user?.id);
-
     if (!session || !session.user?.id) {
       return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
     }
 
     await connectDB();
-    console.log("✅ MongoDB connected");
 
     const body = await req.json();
-    console.log("📦 Body:", body);
-
     const {
       fromAccount,
+      transferType, // "internal" or "external"
       recipientName,
       recipientBank,
       routingNumber,
       accountNumber,
+      recipientUserId, // for internal transfers
       amount,
       description,
     } = body;
 
-    if (!fromAccount || !recipientName || !recipientBank || !routingNumber || !accountNumber || !amount) {
+    if (!fromAccount || !accountNumber || !amount) {
       return NextResponse.json(
         { message: "All fields are required." },
         { status: 400 }
@@ -53,13 +49,8 @@ export async function POST(req) {
       type: fromAccount,
     });
 
-    console.log("💳 Sender account:", senderAccount);
-
     if (!senderAccount) {
-      return NextResponse.json(
-        { message: "Account not found." },
-        { status: 404 }
-      );
+      return NextResponse.json({ message: "Account not found." }, { status: 404 });
     }
 
     if (senderAccount.balance < Number(amount)) {
@@ -70,36 +61,36 @@ export async function POST(req) {
     }
 
     if (senderAccount.status !== "active") {
-      return NextResponse.json(
-        { message: "Your account is not active." },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: "Your account is not active." }, { status: 400 });
     }
 
-    // Generate reference
     const reference = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+
+    // Build description JSON
+    const descriptionData = {
+      note: description || "",
+      recipientName,
+      recipientBank: transferType === "internal" ? "Crownledger Private Banking" : recipientBank,
+      routingNumber: routingNumber || "031176110",
+      accountNumber,
+      transferType: transferType || "external",
+      recipientUserId: recipientUserId || null,
+    };
 
     // Create pending transaction
     const transaction = await Transaction.create({
       senderId: session.user.id,
       senderAccount: senderAccount.accountNumber,
       receiverAccount: accountNumber,
+      receiverId: transferType === "internal" && recipientUserId ? recipientUserId : null,
       amount: Number(amount),
       type: "transfer",
       status: "pending",
-      description: JSON.stringify({
-        note: description || "",
-        recipientName,
-        recipientBank,
-        routingNumber,
-        accountNumber,
-      }),
+      description: JSON.stringify(descriptionData),
       reference,
     });
 
-    console.log("✅ Transaction created:", transaction._id);
-
-    // Create notification for user
+    // Notify sender
     await Notification.create({
       userId: session.user.id,
       title: "Transfer Submitted",
@@ -108,16 +99,16 @@ export async function POST(req) {
       link: "/dashboard/transactions",
     });
 
-    // Send pending email
+    // Send pending email to sender
     try {
       const user = await User.findById(session.user.id);
       const { Resend } = await import("resend");
       const resend = new Resend(process.env.RESEND_API_KEY);
 
       await resend.emails.send({
-        from: "Crownledger <noreply@crownledgerapp.com>",
+        from: "Crownledger Private Banking <noreply@crownledgerapp.com>",
         to: user.email,
-        subject: "Transfer Request Received — Pending Approval",
+        subject: `Transfer Request Received — Ref: ${reference} | Crownledger`,
         html: `
           <div style="font-family:'Outfit',sans-serif;max-width:520px;margin:0 auto;padding:32px;background:#fff;border-radius:16px;border:1px solid #e5e7eb;">
             <div style="text-align:center;margin-bottom:24px;">
@@ -135,7 +126,7 @@ export async function POST(req) {
                 <tr><td style="padding:4px 0;color:#9ca3af;">Reference</td><td style="text-align:right;font-weight:600;">${reference}</td></tr>
                 <tr><td style="padding:4px 0;color:#9ca3af;">Amount</td><td style="text-align:right;font-weight:700;color:#1a56db;font-size:18px;">$${Number(amount).toFixed(2)}</td></tr>
                 <tr><td style="padding:4px 0;color:#9ca3af;">To</td><td style="text-align:right;font-weight:600;">${recipientName}</td></tr>
-                <tr><td style="padding:4px 0;color:#9ca3af;">Bank</td><td style="text-align:right;font-weight:600;">${recipientBank}</td></tr>
+                <tr><td style="padding:4px 0;color:#9ca3af;">Type</td><td style="text-align:right;font-weight:600;">${transferType === "internal" ? "Crownledger Internal" : "External Bank"}</td></tr>
                 <tr><td style="padding:4px 0;color:#9ca3af;">Account</td><td style="text-align:right;font-weight:600;">****${accountNumber.slice(-4)}</td></tr>
                 <tr><td style="padding:4px 0;color:#9ca3af;">Status</td><td style="text-align:right;"><span style="background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:6px;font-weight:600;">Pending</span></td></tr>
               </table>
@@ -149,10 +140,8 @@ export async function POST(req) {
           </div>
         `,
       });
-      console.log("✅ Email sent");
     } catch (emailErr) {
-      console.error("⚠️ Email failed but transfer created:", emailErr.message);
-      // Don't fail the whole request if email fails
+      console.error("Email failed:", emailErr.message);
     }
 
     return NextResponse.json(
@@ -164,9 +153,9 @@ export async function POST(req) {
       { status: 201 }
     );
   } catch (err) {
-    console.error("❌ Transfer error:", err.message);
+    console.error("Transfer error:", err.message);
     return NextResponse.json(
-      { message: err.message || "Something went wrong. Please try again." },
+      { message: err.message || "Something went wrong." },
       { status: 500 }
     );
   }

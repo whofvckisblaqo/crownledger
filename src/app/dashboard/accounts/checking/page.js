@@ -10,6 +10,7 @@ export default function CheckingPage() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAccountNumber, setShowAccountNumber] = useState(false);
+  const [showRouting, setShowRouting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -33,8 +34,22 @@ export default function CheckingPage() {
     }
   };
 
-  const moneyIn = transactions.filter(tx => tx.type === "deposit" || tx.receiverAccount === account?.accountNumber).reduce((sum, tx) => sum + (tx.amount || 0), 0);
-  const moneyOut = transactions.filter(tx => tx.type !== "deposit" && tx.senderAccount === account?.accountNumber).reduce((sum, tx) => sum + (tx.amount || 0), 0);
+  const getDescription = (tx) => {
+    try {
+      const parsed = JSON.parse(tx.description);
+      return parsed.note || parsed.recipientName || tx.type;
+    } catch {
+      return tx.description || tx.type;
+    }
+  };
+
+  const moneyIn = transactions
+    .filter(tx => tx.type === "deposit" || tx.receiverAccount === account?.accountNumber)
+    .reduce((sum, tx) => sum + (tx.amount || 0), 0);
+
+  const moneyOut = transactions
+    .filter(tx => tx.type !== "deposit" && tx.senderAccount === account?.accountNumber)
+    .reduce((sum, tx) => sum + (tx.amount || 0), 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -45,7 +60,9 @@ export default function CheckingPage() {
           </svg>
         </Link>
         <div>
-          <h1 className="text-lg font-bold text-gray-900" style={{ fontFamily: "'Outfit', sans-serif" }}>Checking Account</h1>
+          <h1 className="text-lg font-bold text-gray-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
+            Checking Account
+          </h1>
           <p className="text-xs text-gray-400">Your everyday spending account</p>
         </div>
       </div>
@@ -65,24 +82,48 @@ export default function CheckingPage() {
                   <p className="text-5xl font-bold mb-1" style={{ fontFamily: "'Outfit', sans-serif" }}>
                     ${(account?.balance || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                   </p>
-                  <p className="text-blue-200 text-sm">Current balance: ${(account?.balance || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+                  <p className="text-blue-200 text-sm">
+                    Current balance: ${(account?.balance || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                  </p>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <Link href="/dashboard/transfer" className="bg-white text-blue-600 font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-blue-50 transition text-center" style={{ fontFamily: "'Outfit', sans-serif" }}>
-                    Send Money
-                  </Link>
-                </div>
+                <Link
+                  href="/dashboard/transfer"
+                  className="bg-white text-blue-600 font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-blue-50 transition text-center"
+                  style={{ fontFamily: "'Outfit', sans-serif" }}
+                >
+                  Send Money
+                </Link>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Account info */}
               <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
-                <h3 className="text-sm font-semibold text-gray-700" style={{ fontFamily: "'Outfit', sans-serif" }}>Account Information</h3>
+                <h3 className="text-sm font-semibold text-gray-700" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                  Account Information
+                </h3>
                 {[
-                  { label: "Account Holder", value: `${session?.user?.firstName} ${session?.user?.lastName}` },
+                  {
+                    label: "Account Holder",
+                    value: `${session?.user?.firstName} ${session?.user?.lastName}`,
+                  },
                   { label: "Account Type", value: "Checking" },
-                  { label: "Account Number", value: showAccountNumber ? account?.accountNumber : `****${account?.accountNumber?.slice(-4)}`, toggle: true },
+                  {
+                    label: "Account Number",
+                    value: showAccountNumber
+                      ? account?.accountNumber
+                      : `****${account?.accountNumber?.slice(-4)}`,
+                    toggle: true,
+                    toggleKey: "account",
+                  },
+                  {
+                    label: "Routing Number",
+                    value: showRouting
+                      ? (account?.routingNumber || "031176110")
+                      : `****${(account?.routingNumber || "031176110").slice(-4)}`,
+                    toggle: true,
+                    toggleKey: "routing",
+                  },
                   { label: "Currency", value: "USD" },
                   { label: "Bank", value: "Crownledger Private Banking" },
                   { label: "Status", value: account?.status || "Active", green: true },
@@ -90,17 +131,26 @@ export default function CheckingPage() {
                   <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                     <span className="text-xs text-gray-400 font-medium">{item.label}</span>
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs font-semibold capitalize ${item.green ? "text-green-500" : "text-gray-700"}`}>{item.value}</span>
+                      <span className={`text-xs font-semibold capitalize ${item.green ? "text-green-500" : "text-gray-700"}`}>
+                        {item.value}
+                      </span>
                       {item.toggle && (
-                        <button onClick={() => setShowAccountNumber(!showAccountNumber)} className="text-blue-600 hover:text-blue-700">
-                          {showAccountNumber ? (
+                        <button
+                          onClick={() => {
+                            if (item.toggleKey === "account") setShowAccountNumber(!showAccountNumber);
+                            if (item.toggleKey === "routing") setShowRouting(!showRouting);
+                          }}
+                          className="text-blue-600 hover:text-blue-700 flex-shrink-0"
+                        >
+                          {(item.toggleKey === "account" ? showAccountNumber : showRouting) ? (
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
                               <line x1="1" y1="1" x2="23" y2="23" />
                             </svg>
                           ) : (
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                              <circle cx="12" cy="12" r="3" />
                             </svg>
                           )}
                         </button>
@@ -121,9 +171,31 @@ export default function CheckingPage() {
                   ].map((stat, i) => (
                     <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4">
                       <p className="text-xs text-gray-400 font-medium mb-2 leading-tight">{stat.label}</p>
-                      <p className={`text-xl font-bold ${stat.color}`} style={{ fontFamily: "'Outfit', sans-serif" }}>{stat.value}</p>
+                      <p className={`text-xl font-bold ${stat.color}`} style={{ fontFamily: "'Outfit', sans-serif" }}>
+                        {stat.value}
+                      </p>
                     </div>
                   ))}
+                </div>
+
+                {/* Wire transfer info */}
+                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
+                  <h4 className="text-sm font-semibold text-blue-900 mb-3" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                    Wire Transfer Details
+                  </h4>
+                  <div className="space-y-2">
+                    {[
+                      { label: "Bank Name", value: "Crownledger Private Banking" },
+                      { label: "Account Number", value: account?.accountNumber || "—" },
+                      { label: "Routing Number", value: account?.routingNumber || "031176110" },
+                      { label: "Account Type", value: "Checking" },
+                    ].map((item, i) => (
+                      <div key={i} className="flex justify-between">
+                        <span className="text-xs text-blue-600 font-medium">{item.label}</span>
+                        <span className="text-xs font-bold text-blue-900">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -131,8 +203,12 @@ export default function CheckingPage() {
             {/* Recent transactions */}
             <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
               <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-50">
-                <h3 className="text-sm font-semibold text-gray-700" style={{ fontFamily: "'Outfit', sans-serif" }}>Recent Transactions</h3>
-                <Link href="/dashboard/transactions" className="text-xs text-blue-600 font-medium hover:underline">View all</Link>
+                <h3 className="text-sm font-semibold text-gray-700" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                  Recent Transactions
+                </h3>
+                <Link href="/dashboard/transactions" className="text-xs text-blue-600 font-medium hover:underline">
+                  View all
+                </Link>
               </div>
               {transactions.length === 0 ? (
                 <div className="text-center py-12">
@@ -146,19 +222,32 @@ export default function CheckingPage() {
                   {transactions.slice(0, 8).map((tx, i) => {
                     const isCredit = tx.type === "deposit" || tx.receiverAccount === account?.accountNumber;
                     return (
-                      <div key={i} className="flex items-center gap-4 px-5 sm:px-6 py-4 hover:bg-gray-50 transition">
+                      <Link
+                        key={i}
+                        href={`/dashboard/transactions/${tx._id}`}
+                        className="flex items-center gap-4 px-5 sm:px-6 py-4 hover:bg-gray-50 transition group"
+                      >
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm
                           ${isCredit ? "bg-green-50 text-green-500" : "bg-red-50 text-red-400"}`}>
                           {tx.type?.[0]?.toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{tx.description || tx.type}</p>
-                          <p className="text-xs text-gray-400">{new Date(tx.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                          <p className="text-sm font-medium text-gray-900 truncate capitalize">
+                            {getDescription(tx)}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {new Date(tx.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          </p>
                         </div>
-                        <p className={`text-sm font-bold flex-shrink-0 ${isCredit ? "text-green-500" : "text-red-500"}`}>
-                          {isCredit ? "+" : "-"}${tx.amount?.toFixed(2)}
-                        </p>
-                      </div>
+                        <div className="flex items-center gap-2">
+                          <p className={`text-sm font-bold flex-shrink-0 ${isCredit ? "text-green-500" : "text-red-500"}`}>
+                            {isCredit ? "+" : "-"}${tx.amount?.toFixed(2)}
+                          </p>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:stroke-blue-500 transition">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </Link>
                     );
                   })}
                 </div>
