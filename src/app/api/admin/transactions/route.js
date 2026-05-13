@@ -79,10 +79,13 @@ export async function PATCH(req) {
 
       // If internal transfer — credit receiver account
       if (transferType === "internal" && transaction.receiverAccount) {
-        const receiverAccount = await Account.findOne({
-          accountNumber: transaction.receiverAccount,
-          type: "checking",
-        });
+        // If internal transfer — credit receiver account
+if (parsedDesc.transferType === "internal" && transaction.receiverAccount) {
+  const receiverAccount = await Account.findOne({
+    accountNumber: transaction.receiverAccount,
+  });
+
+  console.log("🔍 Receiver lookup:", transaction.receiverAccount, "→", receiverAccount?._id || "NOT FOUND");
 
         if (receiverAccount) {
           await Account.findByIdAndUpdate(receiverAccount._id, {
