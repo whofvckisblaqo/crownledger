@@ -77,7 +77,7 @@ export async function PATCH(req) {
         });
       }
 
-      // If internal transfer — credit receiver account
+      // If internal or own account transfer — credit receiver account
       if (
         (transferType === "internal" || transferType === "own") &&
         transaction.receiverAccount
@@ -93,6 +93,9 @@ export async function PATCH(req) {
             $inc: { balance: transaction.amount },
           });
 
+          // Get sender's real name
+          const senderName = `${transaction.senderId?.firstName || ""} ${transaction.senderId?.lastName || ""}`.trim() || "Crownledger User";
+
           // Create deposit transaction for receiver
           await Transaction.create({
             receiverId: receiverAccount.userId,
@@ -104,8 +107,8 @@ export async function PATCH(req) {
             status: "completed",
             description: JSON.stringify({
               note: note || "",
-              recipientName: transferType === "own" ? "Own Account Transfer" : "Crownledger Internal Transfer",
-              from: recipientName,
+              recipientName: transferType === "own" ? "Own Account Transfer" : senderName,
+              from: senderName,
             }),
             reference: `DEP-${transaction.reference}`,
           });
@@ -115,7 +118,7 @@ export async function PATCH(req) {
             await Notification.create({
               userId: receiverAccount.userId,
               title: "Money Received 💰",
-              message: `$${transaction.amount.toFixed(2)} has been deposited into your account from ${recipientName}.`,
+              message: `$${transaction.amount.toFixed(2)} has been deposited into your account from ${senderName}.`,
               type: "deposit",
               link: "/dashboard/transactions",
             });
@@ -157,7 +160,7 @@ export async function PATCH(req) {
 
                       <div style="background:white;padding:32px;border-radius:0 0 16px 16px;">
                         <p style="color:#6b7280;font-size:15px;margin:0 0 24px;">
-                          Hi ${receiverUser.firstName}, you have received <strong>$${transaction.amount.toFixed(2)}</strong> from <strong>${recipientName}</strong> into your Crownledger account.
+                          Hi ${receiverUser.firstName}, you have received <strong>$${transaction.amount.toFixed(2)}</strong> from <strong>${senderName}</strong> into your Crownledger account.
                         </p>
 
                         <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;margin-bottom:20px;">
@@ -173,7 +176,7 @@ export async function PATCH(req) {
                             </tr>
                             <tr style="border-bottom:1px solid #dcfce7;">
                               <td style="padding:8px 0;color:#9ca3af;">From</td>
-                              <td style="padding:8px 0;text-align:right;font-weight:600;color:#374151;">${recipientName}</td>
+                              <td style="padding:8px 0;text-align:right;font-weight:600;color:#374151;">${senderName}</td>
                             </tr>
                             <tr style="border-bottom:1px solid #dcfce7;">
                               <td style="padding:8px 0;color:#9ca3af;">To Account</td>
