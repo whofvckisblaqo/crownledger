@@ -1,33 +1,17 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function Hero() {
-  const [scrollY, setScrollY] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const scale = 1 + scrollY * 0.0005;
-  const opacity = Math.max(0, 1 - scrollY * 0.003);
-
   return (
     <section className="w-full relative overflow-hidden min-h-[90vh] flex items-center">
 
-      {/* Background image with zoom */}
+      {/* Background image */}
       <div
-        className="absolute inset-0 z-0 transition-transform duration-75"
+        className="absolute inset-0 z-0"
         style={{
           backgroundImage: `url('https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1800&q=80&fit=crop')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
-          transform: `scale(${scale})`,
-          willChange: "transform",
         }}
       />
 
@@ -37,11 +21,8 @@ export default function Hero() {
       {/* Blue tint overlay */}
       <div className="absolute inset-0 z-10 bg-gradient-to-br from-blue-900/40 via-transparent to-transparent" />
 
-      {/* Content fades out on scroll */}
-      <div
-        className="relative z-20 w-full max-w-7xl mx-auto px-6 py-24"
-        style={{ opacity }}
-      >
+      {/* Content */}
+      <div className="relative z-20 w-full max-w-7xl mx-auto px-6 py-24">
         <div className="flex flex-col-reverse md:flex-row items-center gap-12">
 
           {/* Left — Text */}

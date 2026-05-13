@@ -1,139 +1,103 @@
+"use client";
+
+import useScrollAnimation from "@/hooks/useScrollAnimation";
+
 export default function HowItWorks() {
+  const { ref: titleRef, isVisible: titleVisible } = useScrollAnimation();
   const steps = [
     {
-      number: "01",
+      step: "01",
       title: "Create Your Account",
-      desc: "Sign up with your name, email, and phone number. It takes less than 2 minutes to get started.",
+      desc: "Sign up in under 2 minutes with just your name, email, and phone number. No paperwork required.",
       icon: (
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
         </svg>
       ),
     },
     {
-      number: "02",
+      step: "02",
       title: "Verify Your Identity",
-      desc: "Submit a government-issued ID and SSN last 4 digits. We verify your details securely within minutes.",
+      desc: "Quick identity verification to keep your account secure. Takes less than a minute.",
       icon: (
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          <path d="M9 12l2 2 4-4" />
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
         </svg>
       ),
     },
     {
-      number: "03",
+      step: "03",
       title: "Fund Your Account",
-      desc: "Link your existing bank or deposit a check. Your funds are available instantly once confirmed.",
+      desc: "Add money via bank transfer. Your funds are available immediately.",
       icon: (
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="2" y="5" width="20" height="14" rx="2" />
-          <path d="M2 10h20" />
-          <path d="M12 15v-2m0 0V11m0 2h2m-2 0H10" />
+          <line x1="12" y1="1" x2="12" y2="23" />
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
         </svg>
       ),
     },
     {
-      number: "04",
+      step: "04",
       title: "Start Banking",
-      desc: "Spend, save, transfer, and manage your money all from one clean and powerful dashboard.",
+      desc: "Send money, earn interest, manage your card, and track every transaction in real time.",
       icon: (
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="3" width="7" height="7" rx="1" />
-          <rect x="3" y="14" width="7" height="7" rx="1" />
-          <rect x="14" y="14" width="7" height="7" rx="1" />
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
         </svg>
       ),
     },
   ];
 
   return (
-    <section id="how-it-works" className="w-full bg-white py-24 px-6">
-      <div className="max-w-7xl mx-auto">
-
-        {/* Header */}
-        <div className="mb-16 max-w-2xl">
-          <p className="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-3">
-            Getting Started
-          </p>
+    <section id="accounts" className="py-24 px-6 bg-gray-50">
+      <div className="max-w-6xl mx-auto">
+        <div
+          ref={titleRef}
+          className={`text-center mb-16 scroll-zoom ${titleVisible ? "visible" : ""}`}
+        >
+          <p className="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-4">How It Works</p>
           <h2
-            className="text-4xl font-bold text-gray-900 mb-4"
+            className="text-4xl md:text-5xl font-bold text-gray-900 mb-4"
             style={{ fontFamily: "'Outfit', sans-serif" }}
           >
-            Up and running in minutes.
+            Up and running in minutes
           </h2>
-          <p className="text-gray-500 text-lg leading-relaxed">
-            Opening a Crownledger account is fast, simple, and 100% online.
-            No paperwork. No branch visits. No stress.
+          <p className="text-xl text-gray-500 max-w-2xl mx-auto leading-relaxed">
+            Opening a Crownledger account is the simplest thing you'll do today.
           </p>
         </div>
 
-        {/* Steps */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 relative">
-
-          {/* Connector line — desktop only */}
-          <div className="hidden lg:block absolute top-10 left-[12.5%] right-[12.5%] h-px bg-blue-100 z-0" />
-
-          {steps.map((step, i) => (
-            <div key={i} className="relative z-10 flex flex-col items-start gap-4">
-
-              {/* Icon circle */}
-              <div className="w-20 h-20 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 relative">
-                {step.icon}
-                <span
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center"
-                  style={{ fontFamily: "'Outfit', sans-serif" }}
-                >
-                  {i + 1}
-                </span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {steps.map((step, i) => {
+            const { ref, isVisible } = useScrollAnimation();
+            return (
+              <div
+                key={i}
+                ref={ref}
+                className={`scroll-zoom ${isVisible ? "visible" : ""} delay-${(i + 1) * 100}`}
+              >
+                <div className="bg-white rounded-2xl p-6 text-center hover:shadow-md transition-all duration-300 border border-gray-100 h-full">
+                  <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white mx-auto mb-4 relative">
+                    {step.icon}
+                    <span
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-white border-2 border-blue-600 text-blue-600 text-[10px] font-black rounded-full flex items-center justify-center"
+                      style={{ fontFamily: "'Outfit', sans-serif" }}
+                    >
+                      {i + 1}
+                    </span>
+                  </div>
+                  <h3
+                    className="text-base font-bold text-gray-900 mb-2"
+                    style={{ fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    {step.title}
+                  </h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{step.desc}</p>
+                </div>
               </div>
-
-              {/* Text */}
-              <div>
-                <p className="text-xs font-semibold text-blue-400 mb-1 tracking-widest uppercase">
-                  Step {step.number}
-                </p>
-                <h3
-                  className="text-base font-semibold text-gray-900 mb-2"
-                  style={{ fontFamily: "'Outfit', sans-serif" }}
-                >
-                  {step.title}
-                </h3>
-                <p className="text-sm text-gray-500 leading-relaxed">
-                  {step.desc}
-                </p>
-              </div>
-
-            </div>
-          ))}
+            );
+          })}
         </div>
-
-        {/* Bottom CTA */}
-        <div className="mt-16 bg-blue-600 rounded-3xl px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div>
-            <h3
-              className="text-2xl font-bold text-white mb-2"
-              style={{ fontFamily: "'Outfit', sans-serif" }}
-            >
-              Ready to take control of your finances?
-            </h3>
-            <p className="text-blue-100 text-sm leading-relaxed">
-              Join thousands of Americans already banking smarter with Crownledger.
-            </p>
-          </div>
-          <a
-            href="/signup"
-            className="flex-shrink-0 inline-flex items-center gap-2 bg-white text-blue-600 font-semibold text-sm px-6 py-3.5 rounded-xl hover:bg-blue-50 transition"
-          >
-            Open Free Account
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-          </a>
-        </div>
-
       </div>
     </section>
   );
